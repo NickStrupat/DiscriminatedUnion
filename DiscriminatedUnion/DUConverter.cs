@@ -15,62 +15,27 @@ public sealed class DUConverter : JsonConverterFactory
 
     private sealed class Converter<T> : JsonConverter<T> where T : IDU<T>
     {
+        // private readonly ref struct JsonReaderVisitor(ReadOnlySpan<Byte> utf8Json, JsonSerializerOptions options) : ITypeVisitor
+        // {
+        //     private readonly ReadOnlySpan<Byte> utf8Json = utf8Json;
+        //     Boolean ITypeVisitor.Visit<T1>(out T1? value) where T1 : default => JsonSerializer.TryDeserialize(utf8Json, options, out value);
+        // }
+
+        private readonly struct JsonWriterVisitor(Utf8JsonWriter writer, JsonSerializerOptions options) : IVisitor
+        {
+            void IVisitor.Visit<TVisited>(TVisited value) => JsonSerializer.Serialize(writer, value, options);
+        }
+
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var element = JsonSerializer.Deserialize<JsonElement>(ref reader, options);
-            Object? value = element.ValueKind switch
-            {
-                JsonValueKind.Null => null,
-                JsonValueKind.Number => GetNumber(),
-                JsonValueKind.String => element.GetString(),
-                JsonValueKind.False => false,
-                JsonValueKind.True => true,
-                JsonValueKind.Object => GetObject(),
-                JsonValueKind.Array => GetObject(),
-                _ => throw new ArgumentOutOfRangeException()
-            };
-            return T.Create(value);
-
-            Object GetNumber()
-            {
-                if (element.TryGetSByte(out var sb))
-                    return sb;
-                if (element.TryGetByte(out var b))
-                    return b;
-                if (element.TryGetInt16(out var s))
-                    return s;
-                if (element.TryGetUInt16(out var us))
-                    return us;
-                if (element.TryGetInt32(out var i))
-                    return i;
-                if (element.TryGetUInt32(out var ui))
-                    return ui;
-                if (element.TryGetInt64(out var l))
-                    return l;
-                if (element.TryGetUInt64(out var ul))
-                    return ul;
-                if (element.TryGetSingle(out var f))
-                    return f;
-                return element.GetDouble();
-            }
-
-            Object GetObject()
-            {
-                foreach (var type in T.Types)
-                    if (element.TryDeserialize(type, out var deserialized, options))
-                        return deserialized;
-                throw new("No compatible type found.");
-            }
+            return T.TryDeserialize(ref reader, options);
+            // var visitor = new JsonReaderVisitor(reader.ValueSpan, options);
+            // return T.VisitTypes(visitor);
         }
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            value.Visit(new Visitor(writer, options));
+            value.Visit(new JsonWriterVisitor(writer, options));
         }
-    }
-        
-    private readonly struct Visitor(Utf8JsonWriter writer, JsonSerializerOptions options) : IVisitor
-    {
-        public void Visit<T>(T value) => JsonSerializer.Serialize(writer, value, options);
     }
 }

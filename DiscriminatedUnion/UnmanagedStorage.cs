@@ -3,11 +3,11 @@ using System.Runtime.InteropServices;
 namespace NickStrupat;
 
 [StructLayout(LayoutKind.Sequential, Size = Size)]
-internal struct UnmanagedStorageType
+internal struct UnmanagedStorage
 {
-    private const Int32 Size = 16 - sizeof(Byte);
+    private const Int32 Size = 16;
     public Span<Byte> Span => MemoryMarshal.CreateSpan(ref _0, Size);
-    
+
     public Byte _0;
     // public Byte _1;
     // public Byte _2;
