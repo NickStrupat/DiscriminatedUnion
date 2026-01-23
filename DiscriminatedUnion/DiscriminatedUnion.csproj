@@ -1,9 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <WarningsAsErrors>nullable</WarningsAsErrors>
+        
+        <WeaverConfiguration>
+            <Weavers>
+                <RuntimeNullables CheckNonPublic="true" CheckOutputs="true" />
+            </Weavers>
+        </WeaverConfiguration>
     </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Tests"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="RuntimeNullables.Fody" Version="2.0.0" />
+    </ItemGroup>
 
 </Project>
