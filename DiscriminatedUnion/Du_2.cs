@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -65,6 +66,25 @@ public readonly struct Du<T1, T2>
 		}
 	}
 
+	public override String ToString()
+	{
+		return Match(ToStr, ToStr);
+		static String ToStr<T>(T x) => x?.ToString() ?? String.Empty;
+	}
+
+	public override Int32 GetHashCode()
+	{
+		return Match(GetHc, GetHc);
+		static Int32 GetHc<T>(T x) => x?.GetHashCode() ?? 0;
+	}
+
+	public override Boolean Equals([NotNullWhen(true)] Object? obj) => obj switch
+	{
+		null => false,
+		Du<T1, T2> du => Equals(du),
+		_ => base.Equals(obj)
+	};
+
 	public Boolean Equals(Du<T1, T2> other) => (GetIndex(), other.GetIndex()) switch
 	{
 		(1, 1) => Equals<T1>(other),
@@ -78,4 +98,8 @@ public readonly struct Du<T1, T2>
 		(null, not null) or (not null, null) => false,
 		var (x, y) => x.Equals(y)
 	};
+
+	public static Boolean operator ==(Du<T1, T2> left, Du<T1, T2> right) => left.Equals(right);
+
+	public static Boolean operator !=(Du<T1, T2> left, Du<T1, T2> right) => !(left == right);
 }
