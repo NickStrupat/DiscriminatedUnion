@@ -16,8 +16,8 @@ public readonly struct Du<T1, T2>
 
 	private Byte GetIndex() => managed is { } mr && Du.TryGetIndex(mr, out var i) ? i : unmanaged._0;
 
-	public Du(T1 instance) => (managed, unmanaged) = Du.Init(ref instance, 1);
-	public Du(T2 instance) => (managed, unmanaged) = Du.Init(ref instance, 2);
+	public Du(T1 instance1) => (managed, unmanaged) = Du.Init(ref instance1, 1);
+	public Du(T2 instance2) => (managed, unmanaged) = Du.Init(ref instance2, 2);
 
 	public static implicit operator Du<T1, T2>(T1 value) => new(value);
 	public static implicit operator Du<T1, T2>(T2 value) => new(value);
