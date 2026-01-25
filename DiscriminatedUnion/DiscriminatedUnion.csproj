@@ -5,20 +5,23 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <WarningsAsErrors>nullable</WarningsAsErrors>
-        
-        <WeaverConfiguration>
-            <Weavers>
-                <RuntimeNullables CheckNonPublic="true" CheckOutputs="true" />
-            </Weavers>
-        </WeaverConfiguration>
     </PropertyGroup>
 
     <ItemGroup>
         <InternalsVisibleTo Include="Tests"/>
     </ItemGroup>
 
+    <!-- Automatically check for null arguments when the parameter is annotated as non-nullable -->
     <ItemGroup>
-      <PackageReference Include="RuntimeNullables.Fody" Version="2.0.0" />
+      <PackageReference Include="RuntimeNullables.Fody" Version="2.0.0" PrivateAssets='All' />
     </ItemGroup>
+
+    <PropertyGroup>
+        <WeaverConfiguration>
+            <Weavers>
+                <RuntimeNullables CheckNonPublic="true" CheckOutputs="true" />
+            </Weavers>
+        </WeaverConfiguration>
+    </PropertyGroup>
 
 </Project>
