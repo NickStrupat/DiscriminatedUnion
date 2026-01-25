@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace NickStrupat;
 
-public sealed class DUConverter : JsonConverterFactory
+internal sealed class DUConverter : JsonConverterFactory
 {
     public override Boolean CanConvert(Type typeToConvert) => typeToConvert.IsAssignableTo(typeof(IDu));
 

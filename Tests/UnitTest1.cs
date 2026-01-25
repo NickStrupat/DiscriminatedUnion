@@ -1,10 +1,17 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Castle.Core.Internal;
 using FluentAssertions;
 using Moq;
 using NickStrupat;
 using ObjectLayoutInspector;
 
+[assembly: InternalsVisibleTo(InternalsVisible.ToDynamicProxyGenAssembly2)]
+
 namespace Tests;
+
+// using Json = DU<JsonObject, JsonElement[], String, Int64, Double, Boolean, Null>;
 
 public class UnitTest1
 {
@@ -14,18 +21,24 @@ public class UnitTest1
     [Fact]
     public void TestStuff()
     {
+        var am1 = new Mock<Action<Int32>>();
+        var am2 = new Mock<Action<String>>();
+
         DU<Int32, String> du = 1;
-        du.Switch(x => x.Should().Be(1), Throw);
+        du.Switch(am1.Object, am2.Object);
+
+        am1.Verify(x => x(It.IsAny<Int32>()), Times.Once);
+        am1.Verify(x => x(1), Times.Once);
+        am2.Verify(x => x(It.IsAny<String>()), Times.Never);
     }
+
+    private static void Throw<T>(T obj) => throw new();
 
     [Fact]
     public void TestSwitch_WithInt()
     {
         DU<Int32?, String> du = 1;
-        du.Switch(A1, Throw);
-
-        static void Throw<TX>(TX _) => throw new();
-        static void A1(Int32? x) => x.Should().Be(1);
+        du.Switch(x => x.Should().Be(1), Throw);
     }
 
     [Fact]
@@ -34,7 +47,6 @@ public class UnitTest1
         DU<Int32?, String> du = new("1");
         du.Switch(Throw, A2);
 
-        static void Throw<TX>(TX _) => throw new();
         static void A2(String x) => x.Should().Be("1");
     }
 
@@ -42,14 +54,7 @@ public class UnitTest1
     public void TestMatch_WithInt()
     {
         DU<Int32?, String> du = 1;
-        du.Match(A1, Throw).Should().Be(1);
-
-        static Int32? Throw<TX>(TX _) => throw new();
-        static Int32? A1(Int32? x)
-        {
-            x.Should().Be(1);
-            return x;
-        }
+        du.Match(x => x, _ => 0).Should().Be(1);
     }
 
     [Fact]
@@ -59,6 +64,7 @@ public class UnitTest1
         du.Match(Throw, A2).Should().Be("test".Length);
 
         static Int32? Throw<TX>(TX _) => throw new();
+
         static Int32? A2(String x)
         {
             x.Should().Be("test");
@@ -87,7 +93,7 @@ public class UnitTest1
         du2.Switch(Throw, x => x.Name.Should().Be("Test"));
     }
 
-    class Foo(String name)
+    internal class Foo(String name)
     {
         public Int32 Id { get; set; }
         public String Name { get; set; } = name;
@@ -108,43 +114,65 @@ public class UnitTest1
     [Fact]
     public void JsonNested()
     {
-        // re-write the DU index logic to mean the left-to-right index of the type, including all nested DUs, flattened
-        DU<Int32, Foo> du = 1;
-        DU<String, DU<Int32, Foo>> du2 = du;
-        var json = JsonSerializer.Serialize(du2);
-        var du3 = JsonSerializer.Deserialize<DU<String, DU<Int32, Foo>>>(json);
+        var ma1 = Mock.Of<Action<String>>();
+        var ma2 = Mock.Of<Action<Int32>>();
+        var ma3 = Mock.Of<Action<Foo>>();
 
+        DU<String, DU<Int32, Foo>> du2 = new DU<Int32, Foo>(1);
+
+        var json = JsonSerializer.Serialize(du2);
+        json.Should().Be("1");
+
+        var du3 = JsonSerializer.Deserialize<DU<String, DU<Int32, Foo>>>(json);
         du3.Switch(
-            Throw,
+            ma1,
             x => x.Switch(
-                y => y.Should().Be(1),
-                Throw
+                ma2,
+                ma3
             )
         );
+
+        Mock.Get(ma1).Verify(x => x(It.IsAny<String>()), Times.Never);
+        Mock.Get(ma2).Verify(x => x(It.IsAny<Int32>()), Times.Once);
+        Mock.Get(ma2).Verify(x => x(1), Times.Once);
+        Mock.Get(ma3).Verify(x => x(It.IsAny<Foo>()), Times.Never);
     }
 
-    [Fact]
-    public void NullJson_NoNullInTheDu()
+    [Theory]
+    [MemberData(nameof(NullableData))]
+    public void NullJson_NoNullInTheDu<T>(Dummy<T> _) where T : notnull
     {
-        var func = () => JsonSerializer.Deserialize<DU<String, Int32>>("null");
-        func.Should().Throw<JsonException>().WithMessage("No match was found for converting the JSON into a DU<String, Int32>");
+        var func = () => JsonSerializer.Deserialize<DU<T, Int32>>("null");
+        func.Should().Throw<JsonException>()
+            .WithMessage($"No match was found for converting the JSON into a DU<{typeof(T).Name}, Int32>");
     }
 
-    [Fact]
-    public void NullJson_NullInTheDu()
+    [Theory]
+    [MemberData(nameof(NullableData))]
+    public void NullJson_NullInTheDu<T>(Dummy<T> _) where T : notnull
     {
-        var mockAction = new Mock<Action<Null>>();
+        var mockStringAction = new Mock<Action<T>>();
+        var mockNullAction = new Mock<Action<Null>>();
 
-        var du = JsonSerializer.Deserialize<DU<String, Null>>("null");
+        var du = JsonSerializer.Deserialize<DU<T, Null>>("null");
         du.Switch(
-            Throw,
-            mockAction.Object
+            mockStringAction.Object,
+            mockNullAction.Object
         );
 
-        mockAction.Verify(x => x(It.IsAny<Null>()), Times.Once);
+        mockStringAction.Verify(x => x(It.IsAny<T>()), Times.Never);
+        mockNullAction.Verify(x => x(It.IsAny<Null>()), Times.Once);
     }
 
-    static void Throw<T>(T _) => throw new();
+    public static IEnumerable<Object[]> NullableData =>
+    [
+        [new Dummy<String>()],
+        [new Dummy<String?>()],
+        [new Dummy<Int32>()],
+        [new Dummy<Int32?>()],
+    ];
+
+    public struct Dummy<T>;
 
     public static IEnumerable<Object[]> Data =>
     [

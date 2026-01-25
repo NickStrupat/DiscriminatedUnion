@@ -83,39 +83,25 @@ public interface IVisitor
     void Visit<T>(T value);
 }
 
-[JsonConverter(typeof(NullJsonConverter))]
-public struct Null;
-
-public class NullJsonConverter : JsonConverter<Null>
-{
-    public override Null Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        return reader.TokenType == JsonTokenType.Null ? default : throw new JsonException();
-    }
-
-    public override void Write(Utf8JsonWriter writer, Null value, JsonSerializerOptions options)
-    {
-        writer.WriteNullValue();
-    }
-}
-
 [JsonConverter(typeof(DUConverter))]
 public readonly struct DU<T1, T2>
     : IEquatable<DU<T1, T2>>
     , IDu<DU<T1, T2>>
+    where T1 : notnull
+    where T2 : notnull
 {
-    private readonly UnmanagedStorage unmanagedStorage;
-    private readonly Object? managedReference;
+    private readonly UnmanagedStorage unmanaged;
+    private readonly Object? managed;
 
-    private Byte GetIndex() => managedReference is { } mr && DU.TryGetIndex(mr, out var i) ? i : unmanagedStorage._0;
+    private Byte GetIndex() => managed is { } mr && DU.TryGetIndex(mr, out var i) ? i : unmanaged._0;
 
-    public DU(T1 instance) => (managedReference, unmanagedStorage) = DU.Init(ref instance, 1);
-    public DU(T2 instance) => (managedReference, unmanagedStorage) = DU.Init(ref instance, 2);
+    public DU(T1 instance) => (managed, unmanaged) = DU.Init(ref instance, 1);
+    public DU(T2 instance) => (managed, unmanaged) = DU.Init(ref instance, 2);
 
     public static implicit operator DU<T1, T2>(T1 value) => new(value);
     public static implicit operator DU<T1, T2>(T2 value) => new(value);
 
-    private T Get<T>() => DU.Get<T>(managedReference, in unmanagedStorage);
+    private T Get<T>() => DU.Get<T>(managed, in unmanaged);
 
     public TResult Match<TResult>(Func<T1, TResult> f1, Func<T2, TResult> f2) => GetIndex() switch
     {
