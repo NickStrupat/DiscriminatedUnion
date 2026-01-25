@@ -25,6 +25,36 @@ public readonly struct Du<T1, T2>
 
 	private T Get<T>() => Du.Get<T>(managed, in unmanaged);
 
+	public Boolean TryPick<T>(out T matched) where T : notnull
+	{
+		matched = default!;
+		switch (GetIndex())
+		{
+			case 0:
+				throw new InvalidInstanceException();
+			case 1 when typeof(T) == typeof(T1):
+			case 2 when typeof(T) == typeof(T2):
+				matched = Get<T>();
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	public void Visit<T>(Action<T> action) where T : notnull
+	{
+		switch (GetIndex())
+		{
+			case 0:
+				throw new InvalidInstanceException();
+			case 1 when typeof(T) == typeof(T1):
+			case 2 when typeof(T) == typeof(T2):
+				action(Get<T>());
+				break;
+		}
+	}
+
+
 	public TResult Match<TResult>(Func<T1, TResult> f1, Func<T2, TResult> f2) => GetIndex() switch
 	{
 		1 => f1(Get<T1>()),
