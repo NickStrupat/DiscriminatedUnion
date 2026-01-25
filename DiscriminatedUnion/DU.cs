@@ -1,6 +1,5 @@
 ﻿using System.Collections.Frozen;
 using System.Collections.Immutable;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -36,16 +35,18 @@ internal static class DU
         public static Boolean CanStoreInUnmanagedStorage { get; } = IsUnmanaged && Unsafe.SizeOf<T>() <= Unsafe.SizeOf<UnmanagedStorage>();
     }
 
-    private static readonly Object[] IndexObjects = new Object[256];
-    private static readonly FrozenDictionary<Object, Byte> IndexMap;
-
     static DU()
     {
+        // Here we create a static lookup map of sentinel objects which are used to encode the type index so that we can
+        // prevent boxing by directly storing small unmanaged types in the bytes of the unmanged storage field.
         var indexMap = new Dictionary<Object, Byte>(IndexObjects.Length);
         for (var i = 0; i < IndexObjects.Length; i++)
             indexMap.Add(IndexObjects[i] = new Object(), (Byte)i);
         IndexMap = indexMap.ToFrozenDictionary();
     }
+
+    private static readonly Object[] IndexObjects = new Object[256];
+    private static readonly FrozenDictionary<Object, Byte> IndexMap;
 
     public static Boolean TryGetIndex(Object obj, out Byte index) => IndexMap.TryGetValue(obj, out index);
     public static Object GetIndexObject(Byte index) => IndexObjects[index];
@@ -59,14 +60,14 @@ internal static class DU
 //     public DU(T1 value) => (managedReference, index) = (value, 1);
 // }
 
-internal interface IDU<TDU> : IDU where TDU : IDU<TDU>
+internal interface IDu<TDu> : IDu where TDu : IDu<TDu>
 {
     //static abstract TDU Create(Object? instance);
-    static abstract TDU VisitTypes<TTypeVisitor>(TTypeVisitor visitor) where TTypeVisitor : ITypeVisitor, allows ref struct;
-    static abstract TDU TryDeserialize(ref Utf8JsonReader reader, JsonSerializerOptions? options);
+    static abstract TDu VisitTypes<TTypeVisitor>(TTypeVisitor visitor) where TTypeVisitor : ITypeVisitor, allows ref struct;
+    static abstract TDu TryDeserialize(ref Utf8JsonReader reader, JsonSerializerOptions? options);
 }
 
-internal interface IDU
+internal interface IDu
 {
     void Visit<TVisitor>(TVisitor visitor) where TVisitor : IVisitor;
     static abstract ImmutableArray<Type> Types { get; }
@@ -82,30 +83,41 @@ public interface IVisitor
     void Visit<T>(T value);
 }
 
+[JsonConverter(typeof(NullJsonConverter))]
+public struct Null;
+
+public class NullJsonConverter : JsonConverter<Null>
+{
+    public override Null Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return reader.TokenType == JsonTokenType.Null ? default : throw new JsonException();
+    }
+
+    public override void Write(Utf8JsonWriter writer, Null value, JsonSerializerOptions options)
+    {
+        writer.WriteNullValue();
+    }
+}
+
 [JsonConverter(typeof(DUConverter))]
 public readonly struct DU<T1, T2>
     : IEquatable<DU<T1, T2>>
-    , IDU<DU<T1, T2>>
+    , IDu<DU<T1, T2>>
 {
-    private readonly Byte index => managedReference is {} mr && DU.TryGetIndex(mr, out var i) ? i : unmanagedStorage._0;
     private readonly UnmanagedStorage unmanagedStorage;
     private readonly Object? managedReference;
 
+    private Byte GetIndex() => managedReference is { } mr && DU.TryGetIndex(mr, out var i) ? i : unmanagedStorage._0;
+
     public DU(T1 instance) => (managedReference, unmanagedStorage) = DU.Init(ref instance, 1);
     public DU(T2 instance) => (managedReference, unmanagedStorage) = DU.Init(ref instance, 2);
-    // public DU(Object? instance) => (managedReference, unmanagedStorage) = instance switch
-    // {
-    //     T1 t1 => DU.Init(ref t1, 1),
-    //     T2 t2 => DU.Init(ref t2, 2),
-    //     _ => throw new InvalidOperationException()
-    // };
 
     public static implicit operator DU<T1, T2>(T1 value) => new(value);
     public static implicit operator DU<T1, T2>(T2 value) => new(value);
 
     private T Get<T>() => DU.Get<T>(managedReference, in unmanagedStorage);
 
-    public TResult Match<TResult>(Func<T1, TResult> f1, Func<T2, TResult> f2) => index switch
+    public TResult Match<TResult>(Func<T1, TResult> f1, Func<T2, TResult> f2) => GetIndex() switch
     {
         1 => f1(Get<T1>()),
         2 => f2(Get<T2>()),
@@ -114,7 +126,7 @@ public readonly struct DU<T1, T2>
 
     public void Switch(Action<T1> a1, Action<T2> a2)
     {
-        switch (index)
+        switch (GetIndex())
         {
             case 1: a1(Get<T1>()); break;
             case 2: a2(Get<T2>()); break;
@@ -122,11 +134,9 @@ public readonly struct DU<T1, T2>
         }
     }
 
-    // public static DU<T1, T2> Create(Object? instance) => new(instance);
-
     public void Visit<TVisitor>(TVisitor visitor) where TVisitor : IVisitor
     {
-        switch (index)
+        switch (GetIndex())
         {
             case 1: visitor.Visit(Get<T1>()); break;
             case 2: visitor.Visit(Get<T2>()); break;
@@ -136,7 +146,7 @@ public readonly struct DU<T1, T2>
 
     public static ImmutableArray<Type> Types { get; } = [typeof(T1), typeof(T2)];
 
-    static DU<T1, T2> IDU<DU<T1, T2>>.VisitTypes<TVisitor>(TVisitor visitor)
+    static DU<T1, T2> IDu<DU<T1, T2>>.VisitTypes<TVisitor>(TVisitor visitor)
     {
         if (visitor.Visit<T1>(out var v1))
             return new(v1!);
@@ -145,19 +155,16 @@ public readonly struct DU<T1, T2>
         throw new("ruh roh");
     }
 
-    static DU<T1, T2> IDU<DU<T1, T2>>.TryDeserialize(ref Utf8JsonReader reader, JsonSerializerOptions? options)
+    static DU<T1, T2> IDu<DU<T1, T2>>.TryDeserialize(ref Utf8JsonReader reader, JsonSerializerOptions? options)
     {
-        if (JsonSerializer.TryDeserialize<T1>(ref reader, options, out var v1))
-            return new(v1!);
-        if (JsonSerializer.TryDeserialize<T2>(ref reader, options, out var v2))
-            return new(v2!);
-        throw new("ruh roh");
+        if (JsonSerializer.TryDeserialize<T1>(ref reader, options, out var v1) && v1 is not null)
+            return new(v1);
+        if (JsonSerializer.TryDeserialize<T2>(ref reader, options, out var v2) && v2 is not null)
+            return new(v2);
+        throw new JsonException("No match was found for converting the JSON into a " + typeof(DU<T1, T2>).NameWithGenericArguments);
     }
 
-    // public void Switch(Action<T1> a1, Action<T2> a2) => _ = Match(A2F(a1), A2F(a2));
-    //
-    // private static Func<T, Byte> A2F<T>(Action<T> action) => x => { action(x); return 0; };
-    public Boolean Equals(DU<T1, T2> other) => (index, other.index) switch
+    public Boolean Equals(DU<T1, T2> other) => (GetIndex(), other.GetIndex()) switch
     {
         (1, 1) => Equals<T1>(other),
         (2, 2) => Equals<T2>(other),

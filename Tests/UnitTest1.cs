@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FluentAssertions;
+using Moq;
 using NickStrupat;
 using ObjectLayoutInspector;
 
@@ -14,67 +15,55 @@ public class UnitTest1
     public void TestStuff()
     {
         DU<Int32, String> du = 1;
-        du.Switch(x => x.Should().Be(1), _ => throw new());
+        du.Switch(x => x.Should().Be(1), Throw);
     }
 
-    // [Theory]
-    // [InlineData(1)]
-    // [InlineData("1")]
-    // public void TestSwitch<T>(T value)
-    // {
-    //     DU<Int32?, String> du = new(value);
-    //     if (typeof(T) == typeof(Int32))
-    //         du.Switch(A1, Throw);
-    //     else if (typeof(T) == typeof(String))
-    //         du.Switch(Throw, A2);
-    //     else
-    //         throw new();
-    //     return;
-    //
-    //     static void Throw<TX>(TX _) => throw new();
-    //     static void A1(Int32? x) => x.Should().Be(1);
-    //     static void A2(String x) => x.Should().Be("1");
-    // }
-    //
-    // [Theory]
-    // [InlineData(1)]
-    // [InlineData("test")]
-    // public void TestMatch<T>(T value)
-    // {
-    //     DU<Int32?, String> du = new(value);
-    //     if (typeof(T) == typeof(Int32))
-    //         du.Match(A1, Throw).Should().Be(1);
-    //     else if (typeof(T) == typeof(String))
-    //         du.Match(Throw, A2).Should().Be(value is String s ? s.Length : throw new());
-    //     else
-    //         throw new();
-    //     return;
-    //
-    //     static Int32? Throw<TX>(TX s) => throw new();
-    //     static Int32? A1(Int32? x)
-    //     {
-    //         x.Should().Be(1);
-    //         return x;
-    //     }
-    //
-    //     static Int32? A2(String x)
-    //     {
-    //         x.Should().Be("test");
-    //         return x.Length;
-    //     }
-    // }
-
-    [Theory]
-    [InlineData(1)]
-    [InlineData(2)]
-    public void Asdf(int a)
+    [Fact]
+    public void TestSwitch_WithInt()
     {
-        DU<Int32, String> du = a == 1 ? 1 : "1";
-        if (a == 1)
-            du.Switch(x => x.Should().Be(1), _ => throw new());
-        else
-            du.Switch(_ => throw new(), x => x.Should().Be("1"));
+        DU<Int32?, String> du = 1;
+        du.Switch(A1, Throw);
 
+        static void Throw<TX>(TX _) => throw new();
+        static void A1(Int32? x) => x.Should().Be(1);
+    }
+
+    [Fact]
+    public void TestSwitch_WithString()
+    {
+        DU<Int32?, String> du = new("1");
+        du.Switch(Throw, A2);
+
+        static void Throw<TX>(TX _) => throw new();
+        static void A2(String x) => x.Should().Be("1");
+    }
+
+    [Fact]
+    public void TestMatch_WithInt()
+    {
+        DU<Int32?, String> du = 1;
+        du.Match(A1, Throw).Should().Be(1);
+
+        static Int32? Throw<TX>(TX _) => throw new();
+        static Int32? A1(Int32? x)
+        {
+            x.Should().Be(1);
+            return x;
+        }
+    }
+
+    [Fact]
+    public void TestMatch_WithString()
+    {
+        DU<Int32?, String> du = "test";
+        du.Match(Throw, A2).Should().Be("test".Length);
+
+        static Int32? Throw<TX>(TX _) => throw new();
+        static Int32? A2(String x)
+        {
+            x.Should().Be("test");
+            return x.Length;
+        }
     }
 
     public record Wow(DU<Int32, String> Foo, DU<Int32, String> Bar);
@@ -85,8 +74,8 @@ public class UnitTest1
         var du = new Wow(new(1), new("test"));
         var json = JsonSerializer.Serialize(du);
         var du2 = JsonSerializer.Deserialize<Wow>(json)!;
-        du2.Foo.Switch(x => x.Should().Be(1), _ => throw new());
-        du2.Bar.Switch(_ => throw new(), x => x.Should().Be("test"));
+        du2.Foo.Switch(x => x.Should().Be(1), Throw);
+        du2.Bar.Switch(Throw, x => x.Should().Be("test"));
     }
 
     [Fact]
@@ -95,7 +84,7 @@ public class UnitTest1
         DU<String, Foo> du = new Foo("Test");
         var json = JsonSerializer.Serialize(du);
         var du2 = JsonSerializer.Deserialize<DU<String, Foo>>(json);
-        du2.Switch(x => throw new(), x => x.Name.Should().Be("Test"));
+        du2.Switch(Throw, x => x.Name.Should().Be("Test"));
     }
 
     class Foo(String name)
@@ -113,7 +102,7 @@ public class UnitTest1
                          [{"Id":0,"Name":"test"},{"Id":0,"Name":"test2"}]
                          """);
         var du2 = JsonSerializer.Deserialize<DU<String, Foo[]>>(json);
-        du2.Switch(x => throw new(), x => x.Length.Should().Be(2));
+        du2.Switch(Throw, x => x.Length.Should().Be(2));
     }
 
     [Fact]
@@ -124,13 +113,43 @@ public class UnitTest1
         DU<String, DU<Int32, Foo>> du2 = du;
         var json = JsonSerializer.Serialize(du2);
         var du3 = JsonSerializer.Deserialize<DU<String, DU<Int32, Foo>>>(json);
-        du3.Switch(_ => throw new(), x => x.Switch(y => y.Should().Be(1), _ => throw new()));
+
+        du3.Switch(
+            Throw,
+            x => x.Switch(
+                y => y.Should().Be(1),
+                Throw
+            )
+        );
     }
 
-    public static IEnumerable<Object[]> Data => new List<Object[]>
+    [Fact]
+    public void NullJson_NoNullInTheDu()
     {
-        new Object[] { "test" },
-        new Object[] { 1 },
-        new Object[] { new Foo("test") }
-    };
+        var func = () => JsonSerializer.Deserialize<DU<String, Int32>>("null");
+        func.Should().Throw<JsonException>().WithMessage("No match was found for converting the JSON into a DU<String, Int32>");
+    }
+
+    [Fact]
+    public void NullJson_NullInTheDu()
+    {
+        var mockAction = new Mock<Action<Null>>();
+
+        var du = JsonSerializer.Deserialize<DU<String, Null>>("null");
+        du.Switch(
+            Throw,
+            mockAction.Object
+        );
+
+        mockAction.Verify(x => x(It.IsAny<Null>()), Times.Once);
+    }
+
+    static void Throw<T>(T _) => throw new();
+
+    public static IEnumerable<Object[]> Data =>
+    [
+        ["test"],
+        [1],
+        [new Foo("test")]
+    ];
 }
