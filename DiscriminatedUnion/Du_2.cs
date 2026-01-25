@@ -7,7 +7,7 @@ namespace NickStrupat;
 [JsonConverter(typeof(DuConverter))]
 public readonly struct Du<T1, T2>
 	: IEquatable<Du<T1, T2>>
-		, IDu<Du<T1, T2>>
+	, IDu<Du<T1, T2>>
 	where T1 : notnull
 	where T2 : notnull
 {
