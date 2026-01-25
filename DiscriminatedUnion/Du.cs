@@ -33,7 +33,7 @@ internal static class Du
     static Du()
     {
         // Here we create a static lookup map of sentinel objects which are used to encode the type index so that we can
-        // prevent boxing by directly storing small unmanaged types in the bytes of the unmanged storage field.
+        // prevent boxing by directly storing small unmanaged types in the bytes of the unmanaged storage field.
         var indexMap = new Dictionary<Object, Byte>(IndexObjects.Length);
         for (var i = 0; i < IndexObjects.Length; i++)
             indexMap.Add(IndexObjects[i] = new Object(), (Byte)i);
