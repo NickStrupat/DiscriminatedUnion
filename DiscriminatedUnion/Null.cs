@@ -3,10 +3,10 @@ using System.Text.Json.Serialization;
 
 namespace NickStrupat;
 
-[JsonConverter(typeof(NullJsonConverter))]
+[JsonConverter(typeof(JsonConverter))]
 public struct Null
 {
-	private class NullJsonConverter : JsonConverter<Null>
+	private sealed class JsonConverter : JsonConverter<Null>
 	{
 		public override Null Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
 			reader.TokenType == JsonTokenType.Null

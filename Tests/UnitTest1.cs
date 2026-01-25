@@ -16,7 +16,7 @@ namespace Tests;
 public class UnitTest1
 {
     [Fact]
-    public void TestSize24() => TypeLayout.GetLayout<DU<Int32, String>>().Size.Should().Be(24);
+    public void TestSize24() => TypeLayout.GetLayout<Du<Int32, String>>().Size.Should().Be(24);
 
     [Fact]
     public void TestStuff()
@@ -24,7 +24,7 @@ public class UnitTest1
         var am1 = new Mock<Action<Int32>>();
         var am2 = new Mock<Action<String>>();
 
-        DU<Int32, String> du = 1;
+        Du<Int32, String> du = 1;
         du.Switch(am1.Object, am2.Object);
 
         am1.Verify(x => x(It.IsAny<Int32>()), Times.Once);
@@ -37,14 +37,14 @@ public class UnitTest1
     [Fact]
     public void TestSwitch_WithInt()
     {
-        DU<Int32?, String> du = 1;
+        Du<Int32?, String> du = 1;
         du.Switch(x => x.Should().Be(1), Throw);
     }
 
     [Fact]
     public void TestSwitch_WithString()
     {
-        DU<Int32?, String> du = new("1");
+        Du<Int32?, String> du = new("1");
         du.Switch(Throw, A2);
 
         static void A2(String x) => x.Should().Be("1");
@@ -53,14 +53,14 @@ public class UnitTest1
     [Fact]
     public void TestMatch_WithInt()
     {
-        DU<Int32?, String> du = 1;
+        Du<Int32?, String> du = 1;
         du.Match(x => x, _ => 0).Should().Be(1);
     }
 
     [Fact]
     public void TestMatch_WithString()
     {
-        DU<Int32?, String> du = "test";
+        Du<Int32?, String> du = "test";
         du.Match(Throw, A2).Should().Be("test".Length);
 
         static Int32? Throw<TX>(TX _) => throw new();
@@ -72,7 +72,7 @@ public class UnitTest1
         }
     }
 
-    public record Wow(DU<Int32, String> Foo, DU<Int32, String> Bar);
+    public record Wow(Du<Int32, String> Foo, Du<Int32, String> Bar);
 
     [Fact]
     public void JsonTest()
@@ -87,9 +87,9 @@ public class UnitTest1
     [Fact]
     public void JsonSimpleAndComplex()
     {
-        DU<String, Foo> du = new Foo("Test");
+        Du<String, Foo> du = new Foo("Test");
         var json = JsonSerializer.Serialize(du);
-        var du2 = JsonSerializer.Deserialize<DU<String, Foo>>(json);
+        var du2 = JsonSerializer.Deserialize<Du<String, Foo>>(json);
         du2.Switch(Throw, x => x.Name.Should().Be("Test"));
     }
 
@@ -102,12 +102,12 @@ public class UnitTest1
     [Fact]
     public void JsonSimpleAndArray()
     {
-        DU<String, Foo[]> du = new Foo[] { new("test"), new("test2") };
+        Du<String, Foo[]> du = new Foo[] { new("test"), new("test2") };
         var json = JsonSerializer.Serialize(du);
         json.Should().Be("""
                          [{"Id":0,"Name":"test"},{"Id":0,"Name":"test2"}]
                          """);
-        var du2 = JsonSerializer.Deserialize<DU<String, Foo[]>>(json);
+        var du2 = JsonSerializer.Deserialize<Du<String, Foo[]>>(json);
         du2.Switch(Throw, x => x.Length.Should().Be(2));
     }
 
@@ -118,12 +118,12 @@ public class UnitTest1
         var ma2 = Mock.Of<Action<Int32>>();
         var ma3 = Mock.Of<Action<Foo>>();
 
-        DU<String, DU<Int32, Foo>> du2 = new DU<Int32, Foo>(1);
+        Du<String, Du<Int32, Foo>> du2 = new Du<Int32, Foo>(1);
 
         var json = JsonSerializer.Serialize(du2);
         json.Should().Be("1");
 
-        var du3 = JsonSerializer.Deserialize<DU<String, DU<Int32, Foo>>>(json);
+        var du3 = JsonSerializer.Deserialize<Du<String, Du<Int32, Foo>>>(json);
         du3.Switch(
             ma1,
             x => x.Switch(
@@ -142,7 +142,7 @@ public class UnitTest1
     [MemberData(nameof(NullableData))]
     public void NullJson_NoNullInTheDu<T>(Dummy<T> _) where T : notnull
     {
-        var func = () => JsonSerializer.Deserialize<DU<T, Int32>>("null");
+        var func = () => JsonSerializer.Deserialize<Du<T, Int32>>("null");
         func.Should().Throw<JsonException>()
             .WithMessage($"No match was found for converting the JSON into a DU<{typeof(T).Name}, Int32>");
     }
@@ -154,7 +154,7 @@ public class UnitTest1
         var mockStringAction = new Mock<Action<T>>();
         var mockNullAction = new Mock<Action<Null>>();
 
-        var du = JsonSerializer.Deserialize<DU<T, Null>>("null");
+        var du = JsonSerializer.Deserialize<Du<T, Null>>("null");
         du.Switch(
             mockStringAction.Object,
             mockNullAction.Object
