@@ -22,7 +22,7 @@ internal sealed class DuConverter : JsonConverterFactory
     private sealed class Converter<T> : JsonConverter<T> where T : IDu<T>
     {
         public override T Read(ref Utf8JsonReader reader, Type _, JsonSerializerOptions options) =>
-            T.TryDeserialize(ref reader, options);
+            T.Deserialize(ref reader, options);
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
             value.Serialize(writer, options);

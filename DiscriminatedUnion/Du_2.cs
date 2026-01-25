@@ -47,7 +47,7 @@ public readonly struct Du<T1, T2>
 		typeof(T2)
 	];
 
-	static Du<T1, T2> IDu<Du<T1, T2>>.TryDeserialize(ref Utf8JsonReader reader, JsonSerializerOptions? options)
+	static Du<T1, T2> IDu<Du<T1, T2>>.Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions? options)
 	{
 		if (JsonSerializer.TryDeserialize<T1>(ref reader, options, out var v1) && v1 is not null)
 			return v1;
