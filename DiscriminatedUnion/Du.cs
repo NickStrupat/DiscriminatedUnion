@@ -1,5 +1,6 @@
-﻿using System.Collections.Frozen;
+﻿using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace NickStrupat;
 
@@ -7,7 +8,7 @@ internal static class Du
 {
     public static (Object?, UnmanagedStorage) Init<T>(ref T instance, Byte index) =>
         TypeInfoCache<T>.CanStoreInUnmanagedStorage
-            ? (Indexes.Span[index], AsUnmanaged(ref instance))
+            ? (Indexes[index], AsUnmanaged(ref instance))
             : TypeInfoCache<T>.IsValueType
                 ? (new Box<T>(instance), new UnmanagedStorage(index))
                 : (instance, new UnmanagedStorage(index));
@@ -42,14 +43,14 @@ internal static class Du
 
     static Du()
     {
-        // Here we create a static lookup map of sentinel objects which are used to encode the type index so that we can
+        // Here we create a static array of sentinel objects which are used to encode the type index so that we can
         // prevent boxing by directly storing small unmanaged types in the bytes of the unmanaged storage field.
         var array = new Index[256];
         for (var i = 0; i < array.Length; i++)
             array[i] = new Index((Byte)i);
-        Indexes = array;
+        Indexes = ImmutableCollectionsMarshal.AsImmutableArray(array);
     }
 
     public sealed record Index(Byte Value);
-    public static readonly ReadOnlyMemory<Index> Indexes;
+    public static readonly ImmutableArray<Index> Indexes;
 }
