@@ -9,6 +9,7 @@ internal static class Du
         TypeInfoCache<T>.CanStoreInUnmanagedStorage
             ? (IndexObjects[index], AsUnmanaged(ref instance))
             : (instance, new() { _0 = index });
+            ? (Indexes.Span[index], AsUnmanaged(ref instance))
 
     public static T Get<T>(Object? managedReference, ref readonly UnmanagedStorage unmanagedBytes) =>
         TypeInfoCache<T>.CanStoreInUnmanagedStorage
@@ -34,15 +35,12 @@ internal static class Du
     {
         // Here we create a static lookup map of sentinel objects which are used to encode the type index so that we can
         // prevent boxing by directly storing small unmanaged types in the bytes of the unmanaged storage field.
-        var indexMap = new Dictionary<Object, Byte>(IndexObjects.Length);
-        for (var i = 0; i < IndexObjects.Length; i++)
-            indexMap.Add(IndexObjects[i] = new Object(), (Byte)i);
-        IndexMap = indexMap.ToFrozenDictionary();
+        var array = new Index[256];
+        for (var i = 0; i < array.Length; i++)
+            array[i] = new Index((Byte)i);
+        Indexes = array;
     }
 
-    private static readonly Object[] IndexObjects = new Object[256];
-    private static readonly FrozenDictionary<Object, Byte> IndexMap;
-
-    public static Boolean TryGetIndex(Object obj, out Byte index) => IndexMap.TryGetValue(obj, out index);
-    public static Object GetIndexObject(Byte index) => IndexObjects[index];
+    public sealed record Index(Byte Value);
+    public static readonly ReadOnlyMemory<Index> Indexes;
 }

@@ -15,7 +15,7 @@ public readonly struct Du<T1, T2>
 	private readonly UnmanagedStorage unmanaged;
 	private readonly Object? managed;
 
-	private Byte GetIndex() => managed is { } mr && Du.TryGetIndex(mr, out var i) ? i : unmanaged._0;
+	private Byte GetIndex() => managed is Du.Index dui ? dui.Value : unmanaged._0;
 
 	public Du(T1 instance1) => (managed, unmanaged) = Du.Init(ref instance1, 1);
 	public Du(T2 instance2) => (managed, unmanaged) = Du.Init(ref instance2, 2);
