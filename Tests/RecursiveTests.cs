@@ -33,9 +33,29 @@ public class RecursiveTests
 		Assert.NotNull(values[3]);
 		Assert.True(values[3].TryPick<Null>(out var @null));
 	}
+
+	[Fact]
+	public void DeserializeNullWithoutNullInTheDu()
+	{
+		var json = "null";
+		Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<NonNullable>(json));
+	}
+
+	[Fact]
+	public void DeserializeNullWithNullInTheDu()
+	{
+		var json = "null";
+		_ = JsonSerializer.Deserialize<Nullable>(json);
+	}
 }
 
+[Du<String, Null>]
+sealed partial class Nullable;
+
+[Du<String, Guid>]
+sealed partial class NonNullable;
+
 [Du<JsonObject, JsonValue[], String, Int64, Double, Boolean, Null>]
-partial class JsonValue;
+sealed partial class JsonValue;
 
 sealed class JsonObject : Dictionary<String, JsonValue>;
