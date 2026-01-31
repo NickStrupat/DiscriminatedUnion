@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscriminatedUnion", "Discr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{42583120-F2F5-4227-9A8F-12E1BC21DCFF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscriminatedUnion.SourceGenerator", "DiscriminatedUnion.SourceGenerator\DiscriminatedUnion.SourceGenerator.csproj", "{14CEE6DE-A416-44BC-B3AC-391777D7F47D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{42583120-F2F5-4227-9A8F-12E1BC21DCFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42583120-F2F5-4227-9A8F-12E1BC21DCFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42583120-F2F5-4227-9A8F-12E1BC21DCFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14CEE6DE-A416-44BC-B3AC-391777D7F47D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14CEE6DE-A416-44BC-B3AC-391777D7F47D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14CEE6DE-A416-44BC-B3AC-391777D7F47D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14CEE6DE-A416-44BC-B3AC-391777D7F47D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

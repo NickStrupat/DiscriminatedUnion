@@ -53,4 +53,7 @@ internal static class Du
 
     public sealed record Index(Byte Value);
     public static readonly ImmutableArray<Index> Indexes;
+
+    public static String ToStr<T>(T x) => x?.ToString() ?? String.Empty;
+    public static Int32 GetHc<T>(T x) => x?.GetHashCode() ?? 0;
 }

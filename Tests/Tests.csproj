@@ -26,6 +26,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\DiscriminatedUnion.SourceGenerator\DiscriminatedUnion.SourceGenerator.csproj">
+          <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+          <OutputItemType>Analyzer</OutputItemType>
+      </ProjectReference>
       <ProjectReference Include="..\DiscriminatedUnion\DiscriminatedUnion.csproj" />
     </ItemGroup>
 

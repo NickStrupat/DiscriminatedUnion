@@ -7,9 +7,9 @@
         <WarningsAsErrors>nullable</WarningsAsErrors>
     </PropertyGroup>
 
-    <ItemGroup>
-        <InternalsVisibleTo Include="Tests"/>
-    </ItemGroup>
+<!--    <ItemGroup>-->
+<!--        <InternalsVisibleTo Include="Tests"/>-->
+<!--    </ItemGroup>-->
 
     <!-- Automatically check for null arguments when the parameter is annotated as non-nullable -->
     <ItemGroup>
@@ -23,5 +23,28 @@
             </Weavers>
         </WeaverConfiguration>
     </PropertyGroup>
+
+    <ItemGroup>
+      <None Update="DuGenerated.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>DuGenerated.cs</LastGenOutput>
+      </None>
+      <None Update="DuAttribute.Generated.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>DuAttribute.Generated.cs</LastGenOutput>
+      </None>
+    </ItemGroup>
+    <ItemGroup>
+      <Compile Update="DuGenerated.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>DuGenerated.tt</DependentUpon>
+      </Compile>
+      <Compile Update="DuAttribute.Generated.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>DuAttribute.Generated.tt</DependentUpon>
+      </Compile>
+    </ItemGroup>
 
 </Project>

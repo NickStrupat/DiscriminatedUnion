@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Castle.Core.Internal;
 using FluentAssertions;
 using Moq;
@@ -10,8 +9,6 @@ using ObjectLayoutInspector;
 [assembly: InternalsVisibleTo(InternalsVisible.ToDynamicProxyGenAssembly2)]
 
 namespace Tests;
-
-// using Json = DU<JsonObject, JsonElement[], String, Int64, Double, Boolean, Null>;
 
 public class UnitTest1
 {

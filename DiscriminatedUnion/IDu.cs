@@ -1,3 +1,8 @@
+using System.Collections.Immutable;
+
 namespace NickStrupat;
 
-internal interface IDu;
+public interface IDu
+{
+	static abstract ImmutableArray<Type> Types { get; }
+}

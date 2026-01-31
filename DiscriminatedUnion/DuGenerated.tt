@@ -1,0 +1,153 @@
+<#@ template language="C#" hostspecific="true" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.IO" #>
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace NickStrupat;
+<#
+for (var i = 2; i != 16; i++)
+{
+	var range = Enumerable.Range(1, i + 1).ToArray();
+    var gp = String.Join(", ", from n in range select $"T{n}");
+    var duName = $"Du<{gp}>";
+    var cons = String.Join("\n\t", from n in range select $"where T{n} : notnull");
+    var matchParams = String.Join(", ", from n in range select $"Func<T{n}, TResult> f{n}");
+    var switchParams = String.Join(", ", from n in range select $"Action<T{n}> a{n}");
+    var toStringArgs = String.Join(", ", from n in range select "Du.ToStr");
+    var getHashCodeArgs = String.Join(", ", from n in range select "Du.GetHc");
+#>
+
+public readonly struct <#=duName#>
+	: IEquatable<<#=duName#>>
+	, IDu<<#=duName#>>
+	<#=cons#>
+{
+	private readonly UnmanagedStorage unmanaged;
+	private readonly Object? managed;
+
+	private Byte GetIndex() => managed is Du.Index dui ? dui.Value : unmanaged._0;
+	private T Get<T>() => Du.Get<T>(managed, in unmanaged);
+
+<#foreach (var n in range) {#>
+	public Du(T<#=n#> instance<#=n#>) => (managed, unmanaged) = Du.Init(ref instance<#=n#>, <#=n#>);
+<#}#>
+
+<#foreach (var n in range) {#>
+	public static implicit operator <#=duName#>(T<#=n#> value) => new(value);
+<#}#>
+
+	public Boolean TryPick<T>(out T matched) where T : notnull
+	{
+		matched = default!;
+		switch (GetIndex())
+		{
+			case 0:
+				throw new InvalidInstanceException();
+<#foreach (var n in range) {#>
+			case <#=n#> when typeof(T) == typeof(T<#=n#>):
+<#}#>
+				matched = Get<T>();
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	public void Visit<T>(Action<T> action) where T : notnull
+	{
+		switch (GetIndex())
+		{
+			case 0:
+				throw new InvalidInstanceException();
+<#foreach (var n in range) {#>
+			case <#=n#> when typeof(T) == typeof(T<#=n#>):
+<#}#>
+				action(Get<T>());
+				break;
+		}
+	}
+
+	public TResult Match<TResult>(<#=matchParams#>) => GetIndex() switch
+	{
+<#foreach (var n in range) {#>
+		<#=n#> => f<#=n#>(Get<T<#=n#>>()),
+<#}#>
+		_ => throw new InvalidInstanceException()
+	};
+
+	public void Switch(<#=switchParams#>)
+	{
+		switch (GetIndex())
+		{
+<#foreach (var n in range) {#>
+			case <#=n#>: a<#=n#>(Get<T<#=n#>>()); break;
+<#}#>
+			default: throw new InvalidInstanceException();
+		}
+	}
+
+	public static ImmutableArray<Type> Types { get; } = [
+<#foreach (var n in range) {#>
+		typeof(T<#=n#>),
+<#}#>
+	];
+
+	public static <#=duName#> Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions options)
+	{
+<#foreach (var n in range) {#>
+		if (JsonSerializer.TryDeserialize<T<#=n#>>(ref reader, options, out var v<#=n#>) && v<#=n#> is not null)
+			return v<#=n#>;
+<#}#>
+		throw new JsonException("No match was found for converting the JSON into a " + typeof(Du<T1, T2>).NameWithGenericArguments);
+	}
+
+	public void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options)
+	{
+		switch (GetIndex())
+		{
+<#foreach (var n in range) {#>
+			case <#=n#>: JsonSerializer.Serialize(writer, Get<T<#=n#>>(), options); break;
+<#}#>
+			default: throw new InvalidInstanceException();
+		}
+	}
+
+	public override String ToString() => Match(<#=toStringArgs#>);
+
+	public override Int32 GetHashCode() => Match(<#=getHashCodeArgs#>);
+
+	public override Boolean Equals([NotNullWhen(true)] Object? obj) => obj switch
+	{
+		null => false,
+		<#=duName#> du => Equals(du),
+		_ => base.Equals(obj)
+	};
+
+	public Boolean Equals(<#=duName#> other) => (GetIndex(), other.GetIndex()) switch
+	{
+<#foreach (var n in range) {#>
+		(<#=n#>, <#=n#>) => Equals<T<#=n#>>(other),
+<#}#>
+		_ => false
+	};
+
+	private Boolean Equals<T>(<#=duName#> other) => (Get<T>(), other.Get<T>()) switch
+	{
+		(null, null) => true,
+		(null, not null) or (not null, null) => false,
+		var (x, y) => x.Equals(y)
+	};
+
+	public static Boolean operator ==(<#=duName#> left, <#=duName#> right) => left.Equals(right);
+	public static Boolean operator !=(<#=duName#> left, <#=duName#> right) => !(left == right);
+}
+<#
+	// var templateDirectory = Path.GetDirectoryName(Host.TemplateFile) ?? throw new("ruh roh");
+	// var outputFilePath = Path.Combine(templateDirectory, $"Du_{i + 1}.cs");
+	// File.WriteAllText(outputFilePath, this.GenerationEnvironment.ToString());
+	// this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+}
+#>
