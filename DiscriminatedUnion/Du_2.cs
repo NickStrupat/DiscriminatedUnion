@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -6,6 +7,7 @@ using System.Text.Json.Serialization;
 namespace NickStrupat;
 
 [JsonConverter(typeof(DuJsonConverter))]
+[DebuggerTypeProxy(typeof(Du<,>.DebugView))]
 public readonly struct Du<T1, T2>
 	: IEquatable<Du<T1, T2>>
 	, IDu<Du<T1, T2>>
@@ -122,4 +124,22 @@ public readonly struct Du<T1, T2>
 	public static Boolean operator ==(Du<T1, T2> left, Du<T1, T2> right) => left.Equals(right);
 
 	public static Boolean operator !=(Du<T1, T2> left, Du<T1, T2> right) => !(left == right);
+
+	private sealed class DebugView
+	{
+		private readonly Du<T1, T2> du;
+		public DebugView(Du<T1, T2> du) => this.du = du;
+
+		private UnmanagedStorage unmanaged => du.unmanaged;
+		private Object? managed => du.managed;
+
+		public Byte Index => du.GetIndex();
+
+		public Object? Value => du.GetIndex() switch
+		{
+			1 => du.Get<T1>(),
+			2 => du.Get<T2>(),
+			_ => null
+		};
+	}
 }

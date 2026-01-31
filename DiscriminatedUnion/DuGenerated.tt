@@ -2,6 +2,7 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.IO" #>
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -18,8 +19,11 @@ for (var i = 2; i != 16; i++)
     var switchParams = String.Join(", ", from n in range select $"Action<T{n}> a{n}");
     var toStringArgs = String.Join(", ", from n in range select "Du.ToStr");
     var getHashCodeArgs = String.Join(", ", from n in range select "Du.GetHc");
+    var commas = new String(',', i);
 #>
 
+[JsonConverter(typeof(DuJsonConverter))]
+[DebuggerTypeProxy(typeof(Du<<#=commas#>>.DebugView))]
 public readonly struct <#=duName#>
 	: IEquatable<<#=duName#>>
 	, IDu<<#=duName#>>
@@ -143,6 +147,25 @@ public readonly struct <#=duName#>
 
 	public static Boolean operator ==(<#=duName#> left, <#=duName#> right) => left.Equals(right);
 	public static Boolean operator !=(<#=duName#> left, <#=duName#> right) => !(left == right);
+
+	private sealed class DebugView
+	{
+		private readonly <#=duName#> du;
+		public DebugView(<#=duName#> du) => this.du = du;
+
+		public UnmanagedStorage unmanaged => du.unmanaged;
+		public Object? managed => du.managed;
+
+		public Byte Index => du.GetIndex();
+
+		public Object? Value => du.GetIndex() switch
+		{
+<#foreach (var n in range) {#>
+			<#=n#> => du.Get<T<#=n#>>(),
+<#}#>
+			_ => null
+		};
+	}
 }
 <#
 	// var templateDirectory = Path.GetDirectoryName(Host.TemplateFile) ?? throw new("ruh roh");
