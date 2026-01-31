@@ -116,13 +116,9 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				void IDu<Du<{{typeNames}}>>.Serialize(Utf8JsonWriter writer, JsonSerializerOptions options) => du.Serialize(writer, options);
 				public static ImmutableArray<Type> Types => Du<{{typeNames}}>.Types;
 
-			 	//[UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Serialize")]
-			 	//private static extern void Serialize(Du<{{typeNames}}> du, Utf8JsonWriter writer, JsonSerializerOptions options);
+			 	private sealed class Converter : JsonConverter<{{du2g.Name}}> {
+					public override Boolean HandleNull => true;
 
-				//[UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "Deserialize")]
-				//private static extern Du<{{typeNames}}> Deserialize(Du<{{typeNames}}> du, ref Utf8JsonReader reader, JsonSerializerOptions options);
-
-				private sealed class Converter : JsonConverter<{{du2g.Name}}> {
 					public override {{du2g.Name}} Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
 						new(Du<{{typeNames}}>.Deserialize(ref reader, options));
 

@@ -26,6 +26,12 @@ public class RecursiveTests
 			}
 			""";
 		var deserialized = JsonSerializer.Deserialize<JsonValue>(json);
+		Assert.NotNull(deserialized);
+		Assert.True(deserialized.TryPick<JsonObject>(out var obj));
+		Assert.True(obj.TryGetValue("key2", out var array));
+		Assert.True(array.TryPick<JsonValue[]>(out var values));
+		Assert.NotNull(values[3]);
+		Assert.True(values[3].TryPick<Null>(out var @null));
 	}
 }
 
