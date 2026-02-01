@@ -4,7 +4,7 @@ using NickStrupat;
 
 namespace Tests;
 
-public class RecursiveTests
+public partial class RecursiveTests
 {
 	[Fact]
 	public void Test()
@@ -34,6 +34,11 @@ public class RecursiveTests
 		Assert.True(values[3].TryPick<Null>(out var @null));
 	}
 
+	[Du<JsonObject, JsonValue[], String, Int64, Double, Boolean, Null>]
+	sealed partial class JsonValue;
+
+	sealed class JsonObject : Dictionary<String, JsonValue>;
+
 	[Fact]
 	public void DeserializeNullWithoutNullInTheDu()
 	{
@@ -47,15 +52,10 @@ public class RecursiveTests
 		var json = "null";
 		_ = JsonSerializer.Deserialize<Nullable>(json);
 	}
+
+	[Du<String, Null>]
+	sealed partial class Nullable;
+
+	[Du<String, Guid>]
+	sealed partial class NonNullable;
 }
-
-[Du<String, Null>]
-sealed partial class Nullable;
-
-[Du<String, Guid>]
-sealed partial class NonNullable;
-
-[Du<JsonObject, JsonValue[], String, Int64, Double, Boolean, Null>]
-sealed partial class JsonValue;
-
-sealed class JsonObject : Dictionary<String, JsonValue>;

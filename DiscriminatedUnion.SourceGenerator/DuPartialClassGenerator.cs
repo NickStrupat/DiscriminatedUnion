@@ -12,16 +12,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 {
 	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
-		// const String UnsafeAccessor =
-		// 	"""
-		// 	[UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "Deserialize")]
-		// 	static extern ref String Name(Foo @this);
-		// 	""";
-		// context.RegisterPostInitializationOutput(ctx => ctx.AddSource(
-		// 	"EnumExtensionsAttribute.g.cs",
-		// 	SourceText.From(UnsafeAccessor, Encoding.UTF8)));
-
-		IncrementalValuesProvider<DuToGenerate?> enumsToGenerate = context.SyntaxProvider
+		var enumsToGenerate = context.SyntaxProvider
 			.CreateSyntaxProvider(
 				predicate: static (s, _) => s is ClassDeclarationSyntax { AttributeLists.Count: > 0 },
 				transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx)
@@ -49,13 +40,23 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 		return null;
 	}
 
-	static DuToGenerate? GetDuToGenerate(SemanticModel semanticModel, SyntaxNode classDeclarationSyntax, INamedTypeSymbol attributeType)
+	static DuToGenerate? GetDuToGenerate(SemanticModel semanticModel,
+		SyntaxNode classDeclarationSyntax,
+		INamedTypeSymbol attributeType)
 	{
 		if (semanticModel.GetDeclaredSymbol(classDeclarationSyntax) is not INamedTypeSymbol classSymbol)
 			return null;
 
 		String className = classSymbol.Name;
 		String @namespace = classSymbol.ContainingNamespace?.ToDisplayString() ?? String.Empty;
+
+		var nestedClasses = new List<String>();
+		var currentType = classSymbol.ContainingType;
+		while (currentType is not null)
+		{
+			nestedClasses.Insert(0, currentType.Name);
+			currentType = currentType.ContainingType;
+		}
 
 		var typeNames = new List<String>();
 
@@ -64,7 +65,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 			typeNames.Add(ta.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
 		}
 
-		return new DuToGenerate(className, typeNames, @namespace);
+		return new DuToGenerate(className, typeNames, @namespace, nestedClasses);
 	}
 
 	private static void Execute(DuToGenerate? source, SourceProductionContext spc)
@@ -82,22 +83,18 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 	private static String GenerateExtensionClass(DuToGenerate du2g)
 	{
 		var typeNames = String.Join(", ", du2g.TypeNames);
-		var ctors = String.Join("\n\t", du2g.TypeNames.Select((tn, i) => $"public {du2g.Name}({tn} instance{i + 1}) => du = new(instance{i + 1});"));
-		var convOps = String.Join("\n\t", du2g.TypeNames.Select(tn => $"public static implicit operator {du2g.Name}({tn} value) => new(value);"));
+		var ctors = String.Join("\n\t",
+			du2g.TypeNames.Select((tn, i) =>
+				$"public {du2g.Name}({tn} instance{i + 1}) => du = new(instance{i + 1});"));
+		var convOps = String.Join("\n\t",
+			du2g.TypeNames.Select(tn => $"public static implicit operator {du2g.Name}({tn} value) => new(value);"));
 		var funcParams = String.Join(", ", du2g.TypeNames.Select((tn, i) => $"Func<{tn}, TResult> f{i + 1}"));
 		var funcArgs = String.Join(", ", du2g.TypeNames.Select((_, i) => $"f{i + 1}"));
 		var actionParams = String.Join(", ", du2g.TypeNames.Select((tn, i) => $"Action<{tn}> a{i + 1}"));
 		var actionArgs = String.Join(", ", du2g.TypeNames.Select((_, i) => $"a{i + 1}"));
-		return
+
+		var classBody =
 			$$"""
-			using System.Collections.Immutable;
-			using System.Runtime.CompilerServices;
-			using System.Text.Json;
-			using System.Text.Json.Serialization;
-			using NickStrupat;
-
-			namespace {{du2g.Namespace}};
-
 			[JsonConverter(typeof(Converter))]
 			partial class {{du2g.Name}} : IDu<Du<{{typeNames}}>> {
 				private readonly Du<{{typeNames}}> du;
@@ -116,7 +113,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				void IDu<Du<{{typeNames}}>>.Serialize(Utf8JsonWriter writer, JsonSerializerOptions options) => du.Serialize(writer, options);
 				public static ImmutableArray<Type> Types => Du<{{typeNames}}>.Types;
 
-			 	private sealed class Converter : JsonConverter<{{du2g.Name}}> {
+				private sealed class Converter : JsonConverter<{{du2g.Name}}> {
 					public override Boolean HandleNull => true;
 
 					public override {{du2g.Name}} Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
@@ -127,12 +124,31 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				}
 			}
 			""";
+
+		var openingBrackets = String.Join("\n", du2g.NestedClasses.Select(nc => $"partial class {nc} {{"));
+		var closingBrackets = String.Join("\n", Enumerable.Repeat("}", du2g.NestedClasses.Count));
+
+		return
+			$$"""
+			using System.Collections.Immutable;
+			using System.Runtime.CompilerServices;
+			using System.Text.Json;
+			using System.Text.Json.Serialization;
+			using NickStrupat;
+
+			namespace {{du2g.Namespace}};
+
+			{{openingBrackets}}
+			{{classBody}}
+			{{closingBrackets}}
+			""";
 	}
 }
 
-public readonly struct DuToGenerate(String name, List<String> typeNames, String @namespace)
+public readonly struct DuToGenerate(String name, List<String> typeNames, String @namespace, List<String> nestedClasses)
 {
 	public String Name => name;
 	public List<String> TypeNames => typeNames;
 	public String Namespace => @namespace;
+	public List<String> NestedClasses => nestedClasses;
 }
