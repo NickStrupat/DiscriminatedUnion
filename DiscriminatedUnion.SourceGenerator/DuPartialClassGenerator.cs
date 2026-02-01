@@ -96,7 +96,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 		var classBody =
 			$$"""
 			[JsonConverter(typeof(Converter))]
-			partial class {{du2g.Name}} : IDu<Du<{{typeNames}}>> {
+			sealed partial class {{du2g.Name}} : IDu<Du<{{typeNames}}>> {
 				private readonly Du<{{typeNames}}> du;
 				private {{du2g.Name}}(Du<{{typeNames}}> du) => this.du = du;
 
