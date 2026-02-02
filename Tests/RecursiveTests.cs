@@ -35,7 +35,7 @@ public partial class RecursiveTests
 	}
 
 	[Du<JsonObject, JsonValue[], String, Int64, Double, Boolean, Null>]
-	sealed partial class JsonValue;
+	partial class JsonValue;
 
 	sealed class JsonObject : Dictionary<String, JsonValue>;
 
@@ -54,8 +54,8 @@ public partial class RecursiveTests
 	}
 
 	[Du<String, Null>]
-	sealed partial class Nullable;
+	partial class Nullable;
 
 	[Du<String, Guid>]
-	sealed partial class NonNullable;
+	partial class NonNullable;
 }
