@@ -77,7 +77,8 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 		var result = GenerateExtensionClass(value);
 
 		// Create a separate partial class file for each enum
-		spc.AddSource($"DuBase.{value.Name}.g.cs", SourceText.From(result, Encoding.UTF8));
+		var fileName = value.NestedClasses.Count > 0 ? String.Join(".", value.NestedClasses) + "." : String.Empty;
+		spc.AddSource($"DuGenerated.{value.Namespace}.{fileName}{value.Name}.g.cs", SourceText.From(result, Encoding.UTF8));
 	}
 
 	private static String GenerateExtensionClass(DuToGenerate du2g)
