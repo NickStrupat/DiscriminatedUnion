@@ -25,9 +25,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <None Update="DuGenerated.tt">
+      <None Update="Du.Generated.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
-        <LastGenOutput>DuGenerated.cs</LastGenOutput>
+        <LastGenOutput>Du.Generated.cs</LastGenOutput>
       </None>
       <None Update="DuAttribute.Generated.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
@@ -35,10 +35,10 @@
       </None>
     </ItemGroup>
     <ItemGroup>
-      <Compile Update="DuGenerated.cs">
+      <Compile Update="Du.Generated.cs">
         <AutoGen>True</AutoGen>
         <DesignTime>True</DesignTime>
-        <DependentUpon>DuGenerated.tt</DependentUpon>
+        <DependentUpon>Du.Generated.tt</DependentUpon>
       </Compile>
       <Compile Update="DuAttribute.Generated.cs">
         <AutoGen>True</AutoGen>
