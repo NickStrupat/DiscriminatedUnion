@@ -1,3 +1,2 @@
 <#@ template language="C#" #>
-
 <#+ public const Int32 MaxDuTypes = 16; #>

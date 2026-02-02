@@ -25,22 +25,22 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <None Update="Du.Generated.tt">
+      <None Update="Templates\Du.Generated.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>Du.Generated.cs</LastGenOutput>
       </None>
-      <None Update="DuAttribute.Generated.tt">
+      <None Update="Templates\DuAttribute.Generated.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>DuAttribute.Generated.cs</LastGenOutput>
       </None>
     </ItemGroup>
     <ItemGroup>
-      <Compile Update="Du.Generated.cs">
+      <Compile Update="Templates\Du.Generated.cs">
         <AutoGen>True</AutoGen>
         <DesignTime>True</DesignTime>
         <DependentUpon>Du.Generated.tt</DependentUpon>
       </Compile>
-      <Compile Update="DuAttribute.Generated.cs">
+      <Compile Update="Templates\DuAttribute.Generated.cs">
         <AutoGen>True</AutoGen>
         <DesignTime>True</DesignTime>
         <DependentUpon>DuAttribute.Generated.tt</DependentUpon>

@@ -6,5 +6,6 @@ public static class EnumerableExtensions
 	{
 		public String Join(String separator) => String.Join(separator, enumerable);
 		public String Join(Char separator) => String.Join(separator, enumerable);
+		public String Join() => String.Join(String.Empty, enumerable);
 	}
 }

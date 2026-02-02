@@ -1,9 +1,7 @@
 <#@ template language="C#" #>
 <#@ import namespace="System.Linq" #>
 <#@ include file="Shared.ttinclude" #>
-
 namespace NickStrupat;
-
 <#
 for (var i = 1; i != MaxDuTypes; i++)
 {
@@ -11,11 +9,11 @@ for (var i = 1; i != MaxDuTypes; i++)
 	var gps = String.Join(", ", from n in range select $"T{n}");
 	var gpts = String.Join(",\n\t", from n in range select $"typeof(T{n})");
 #>
+
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class DuAttribute<<#=gps#>>() : DuAttributeBase([
 	<#=gpts#>
 ]);
-
 <#
 }
 #>
