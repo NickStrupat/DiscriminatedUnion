@@ -8,7 +8,7 @@ public static class TypeExtensions
 			type.Name.IndexOf('`') switch
 			{
 				-1 => type.Name,
-				var i => $"{type.Name[..i]}<{type.GenericTypeArguments.Select(x => x.Name).Join(", ")}>"
+				var i => $"{type.Name[..i]}<{type.GetGenericArguments().Select(x => x.Name).Join(", ")}>"
 			};
 	}
 }
