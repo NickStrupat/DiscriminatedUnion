@@ -7,13 +7,12 @@ for (var i = 1; i != MaxDuTypes; i++)
 {
 	var range = Enumerable.Range(1, i + 1).ToArray();
 	var gps = String.Join(", ", from n in range select $"T{n}");
-	var gpts = String.Join(",\n\t", from n in range select $"typeof(T{n})");
+	var gpcs = String.Join(" ", from n in range select $"where T{n} : notnull");
 #>
 
 [AttributeUsage(AttributeTargets.Class)]
-public sealed class DuAttribute<<#=gps#>>() : DuAttributeBase([
-	<#=gpts#>
-]);
+public sealed class DuAttribute<<#=gps#>> : Attribute
+	<#=gpcs#>;
 <#
 }
 #>
