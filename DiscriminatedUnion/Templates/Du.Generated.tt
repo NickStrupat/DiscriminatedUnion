@@ -107,7 +107,7 @@ public readonly struct <#=duName#>
 		if (JsonSerializer.TryDeserialize<T<#=n#>>(ref reader, options, out var v<#=n#>) && v<#=n#> is not null)
 			return v<#=n#>;
 <#}#>
-		throw new JsonException("No match was found for converting the JSON into a " + typeof(Du<T1, T2>).NameWithGenericArguments);
+		throw new JsonException("No match was found for converting the JSON into a " + typeof(<#=duName#>).NameWithGenericArguments);
 	}
 
 	public void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options)
