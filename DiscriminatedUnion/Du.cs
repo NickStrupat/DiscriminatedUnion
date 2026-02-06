@@ -32,7 +32,7 @@ internal static class Du
         return unmanagedStorage;
     }
 
-    private static T UnmanagedAs<T>(in UnmanagedStorage source) => Unsafe.As<UnmanagedStorage, T>(ref Unsafe.AsRef(in source));
+    private static T UnmanagedAs<T>(in UnmanagedStorage source) => Unsafe.ReadUnaligned<T>(in source._0);
 
     private static class TypeInfoCache<T>
     {
