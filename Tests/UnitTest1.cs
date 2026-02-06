@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Castle.Core.Internal;
-using FluentAssertions;
+using AwesomeAssertions;
 using Moq;
 using NickStrupat;
 using ObjectLayoutInspector;
