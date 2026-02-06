@@ -20,10 +20,7 @@ internal static class Du
                 ? ((Box<T>)managedReference!).Value
                 : (T)managedReference!;
 
-    private sealed class Box<T>(T value)
-    {
-        public T Value = value;
-    }
+    private sealed record Box<T>(T Value);
 
     private static UnmanagedStorage AsUnmanaged<T>(ref T source)
     {
