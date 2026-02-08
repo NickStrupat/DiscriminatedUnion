@@ -34,8 +34,12 @@ public readonly struct <#=duName#>
 	private readonly UnmanagedStorage unmanaged;
 	private readonly Object? managed;
 
-	private Byte GetIndex() => managed is Du.Index dui ? dui.Value : unmanaged._0;
 	private T Get<T>() => Du.Get<T>(managed, in unmanaged);
+	private Byte GetIndex() => managed is Du.Index dui
+		? dui.Value
+		: unmanaged._0 is not 0
+			? unmanaged._0
+			: throw new InvalidInstanceException();
 
 <#foreach (var n in range) {#>
 	public Du(T<#=n#> instance<#=n#>) => (managed, unmanaged) = Du.Init(ref instance<#=n#>, <#=n#>);
@@ -45,35 +49,30 @@ public readonly struct <#=duName#>
 	public static implicit operator <#=duName#>(T<#=n#> value) => new(value);
 <#}#>
 
+	private Boolean Result<T>(Boolean isMatch, out T matched)
+	{
+		matched = Get<T>();
+		return isMatch;
+	}
+
 	public Boolean TryPick<T>(out T matched) where T : notnull
 	{
-		matched = default!;
 		switch (GetIndex())
 		{
-			case 0:
-				throw new InvalidInstanceException();
 <#foreach (var n in range) {#>
-			case <#=n#> when typeof(T) == typeof(T<#=n#>):
+			case <#=n#> when Result<T>(typeof(T) == typeof(T<#=n#>), out matched):
 <#}#>
-				matched = Get<T>();
 				return true;
 			default:
+				matched = default!;
 				return false;
 		}
 	}
 
 	public void Visit<T>(Action<T> action) where T : notnull
 	{
-		switch (GetIndex())
-		{
-			case 0:
-				throw new InvalidInstanceException();
-<#foreach (var n in range) {#>
-			case <#=n#> when typeof(T) == typeof(T<#=n#>):
-<#}#>
-				action(Get<T>());
-				break;
-		}
+		if (TryPick(out T matched))
+			action(matched);
 	}
 
 	public TResult Match<TResult>(<#=matchParams#>) => GetIndex() switch
