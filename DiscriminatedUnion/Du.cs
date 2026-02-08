@@ -13,12 +13,19 @@ internal static class Du
                 ? (new Box<T>(instance), new UnmanagedStorage(index))
                 : (instance, new UnmanagedStorage(index));
 
-    public static T Get<T>(Object? managedReference, ref readonly UnmanagedStorage unmanagedBytes) =>
+    public static T Get<T>(Object? managed, ref readonly UnmanagedStorage unmanagedBytes) =>
         TypeInfoCache<T>.CanStoreInUnmanagedStorage
             ? UnmanagedAs<T>(in unmanagedBytes)
             : TypeInfoCache<T>.IsValueType
-                ? ((Box<T>)managedReference!).Value
-                : (T)managedReference!;
+                ? ((Box<T>)managed!).Value
+                : (T)managed!;
+
+    public static Byte GetIndex(Object? managed, ref readonly UnmanagedStorage unmanaged) =>
+        managed is Index index
+            ? index.Value
+            : unmanaged._0 is not 0
+                ? unmanaged._0
+                : throw new InvalidInstanceException();
 
     private sealed record Box<T>(T Value);
 

@@ -35,11 +35,7 @@ public readonly struct <#=duName#>
 	private readonly Object? managed;
 
 	private T Get<T>() => Du.Get<T>(managed, in unmanaged);
-	private Byte GetIndex() => managed is Du.Index dui
-		? dui.Value
-		: unmanaged._0 is not 0
-			? unmanaged._0
-			: throw new InvalidInstanceException();
+	private Byte GetIndex() => Du.GetIndex(managed, in unmanaged);
 
 <#foreach (var n in range) {#>
 	public Du(T<#=n#> instance<#=n#>) => (managed, unmanaged) = Du.Init(ref instance<#=n#>, <#=n#>);
