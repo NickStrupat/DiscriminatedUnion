@@ -45,19 +45,14 @@ public readonly struct <#=duName#>
 	public static implicit operator <#=duName#>(T<#=n#> value) => new(value);
 <#}#>
 
-	private Boolean Result<T>(Boolean isMatch, out T matched)
-	{
-		matched = Get<T>();
-		return isMatch;
-	}
-
-	public Boolean TryPick<T>(out T matched) where T : notnull
+	public Boolean TryPick<T>([NotNullWhen(true)] out T? matched) where T : notnull
 	{
 		switch (GetIndex())
 		{
 <#foreach (var n in range) {#>
-			case <#=n#> when Result<T>(typeof(T) == typeof(T<#=n#>), out matched):
+			case <#=n#> when typeof(T) == typeof(T<#=n#>):
 <#}#>
+				matched = Get<T>();
 				return true;
 			default:
 				matched = default!;
@@ -67,7 +62,7 @@ public readonly struct <#=duName#>
 
 	public void Visit<T>(Action<T> action) where T : notnull
 	{
-		if (TryPick(out T matched))
+		if (TryPick(out T? matched))
 			action(matched);
 	}
 
