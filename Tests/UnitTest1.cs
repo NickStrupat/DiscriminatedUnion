@@ -140,8 +140,7 @@ public class UnitTest1
     public void NullJson_NoNullInTheDu<T>(Dummy<T> _) where T : notnull
     {
         var func = () => JsonSerializer.Deserialize<Du<T, Int32>>("null");
-        func.Should().Throw<JsonException>()
-            .WithMessage($"No match was found for converting the JSON into a DU<{typeof(T).Name}, Int32>");
+        func.Should().Throw<JsonException>().Where(x => x.Message == $"No match was found for converting the JSON into a {nameof(Du<,>)}<{typeof(T).Name}, Int32>");
     }
 
     [Theory]
