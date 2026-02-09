@@ -34,14 +34,14 @@ public class UnitTest1
     [Fact]
     public void TestSwitch_WithInt()
     {
-        Du<Int32?, String> du = 1;
+        Du<Int32, String> du = 1;
         du.Switch(x => x.Should().Be(1), Throw);
     }
 
     [Fact]
     public void TestSwitch_WithString()
     {
-        Du<Int32?, String> du = new("1");
+        Du<Int32, String> du = new("1");
         du.Switch(Throw, A2);
 
         static void A2(String x) => x.Should().Be("1");
@@ -50,14 +50,14 @@ public class UnitTest1
     [Fact]
     public void TestMatch_WithInt()
     {
-        Du<Int32?, String> du = 1;
+        Du<Int32, String> du = 1;
         du.Match(x => x, _ => 0).Should().Be(1);
     }
 
     [Fact]
     public void TestMatch_WithString()
     {
-        Du<Int32?, String> du = "test";
+        Du<Int32, String> du = "test";
         du.Match(Throw, A2).Should().Be("test".Length);
 
         static Int32? Throw<TX>(TX _) => throw new();
