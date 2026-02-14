@@ -105,6 +105,9 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 
 				{{convOps}}
 
+				public void Visit<TVisitor>(TVisitor visitor) where TVisitor : IVisitor => du.Visit(visitor);
+				public TResult Visit<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult> => du.Visit<TVisitor, TResult>(visitor);
+
 				public Boolean TryPick<T>(out T matched) where T : notnull => du.TryPick(out matched);
 				public void Visit<T>(Action<T> action) where T : notnull => du.Visit(action);
 				public TResult Match<TResult>({{funcParams}}) => du.Match({{funcArgs}});

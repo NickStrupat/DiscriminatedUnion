@@ -14,14 +14,14 @@ namespace NickStrupat;
 for (var i = 1; i != MaxDuTypes; i++)
 {
 	var range = Enumerable.Range(1, i + 1).ToArray();
-    var gp = String.Join(", ", from n in range select $"T{n}");
-    var duName = $"Du<{gp}>";
-    var cons = String.Join("\n\t", from n in range select $"where T{n} : notnull");
-    var matchParams = String.Join(", ", from n in range select $"Func<T{n}, TResult> f{n}");
-    var switchParams = String.Join(", ", from n in range select $"Action<T{n}> a{n}");
-    var toStringArgs = String.Join(", ", from n in range select "Du.ToStr");
-    var getHashCodeArgs = String.Join(", ", from n in range select "Du.GetHc");
-    var commas = new String(',', i);
+	var gps = String.Join(", ", from n in range select $"T{n}");
+	var duName = $"Du<{gps}>";
+	var cons = String.Join("\n\t", from n in range select $"where T{n} : notnull");
+	var matchParams = String.Join(", ", from n in range select $"Func<T{n}, TResult> f{n}");
+	var switchParams = String.Join(", ", from n in range select $"Action<T{n}> a{n}");
+	var toStringArgs = String.Join(", ", from n in range select "Du.ToStr");
+	var getHashCodeArgs = String.Join(", ", from n in range select "Du.GetHc");
+	var commas = new String(',', i);
 #>
 
 [JsonConverter(typeof(DuJsonConverter))]
@@ -35,6 +35,8 @@ public readonly struct <#=duName#>
 	private readonly Object? managed;
 
 	private T Get<T>() => Du.Get<T>(managed, in unmanaged);
+
+	private Byte GetIndexUnsafe() => Du.GetIndexUnsafe(managed, in unmanaged);
 	private Byte GetIndex() => Du.GetIndex(managed, in unmanaged);
 
 <#foreach (var n in range) {#>
@@ -66,7 +68,28 @@ public readonly struct <#=duName#>
 			action(matched);
 	}
 
-	public TResult Match<TResult>(<#=matchParams#>) => GetIndex() switch
+	public void Visit<TVisitor>(TVisitor visitor) where TVisitor : IVisitor
+	{
+		switch (GetIndexUnsafe())
+		{
+<#foreach (var n in range) {#>
+			case <#=n#>: visitor.Visit(Get<T<#=n#>>()); break;
+<#}#>
+			default: throw new InvalidInstanceException();
+		}
+	}
+
+	public TResult Visit<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult>
+	{
+		switch (GetIndexUnsafe())
+		{
+			case 1: return visitor.Visit(Get<T1>());
+			case 2: return visitor.Visit(Get<T2>());
+			default: throw new InvalidInstanceException();
+		}
+	}
+
+	public TResult Match<TResult>(<#=matchParams#>) => GetIndexUnsafe() switch
 	{
 <#foreach (var n in range) {#>
 		<#=n#> => f<#=n#>(Get<T<#=n#>>()),
@@ -76,7 +99,7 @@ public readonly struct <#=duName#>
 
 	public void Switch(<#=switchParams#>)
 	{
-		switch (GetIndex())
+		switch (GetIndexUnsafe())
 		{
 <#foreach (var n in range) {#>
 			case <#=n#>: a<#=n#>(Get<T<#=n#>>()); break;
@@ -100,26 +123,20 @@ public readonly struct <#=duName#>
 		throw new JsonException("No match was found for converting the JSON into a " + typeof(<#=duName#>).NameWithGenericArguments);
 	}
 
-	public void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options)
-	{
-		switch (GetIndex())
-		{
-<#foreach (var n in range) {#>
-			case <#=n#>: JsonSerializer.Serialize(writer, Get<T<#=n#>>(), options); break;
-<#}#>
-			default: throw new InvalidInstanceException();
-		}
-	}
+	public void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options) => Visit(new JsonSerializerVisitor(writer, options));
 
-	public override String ToString() => Match(<#=toStringArgs#>);
+	public override String ToString() => Visit<ToStringVisitor, String>(default);
 
-	public override Int32 GetHashCode() => Match(<#=getHashCodeArgs#>);
+	public override Int32 GetHashCode() => Visit<GetHashCodeVisitor, Int32>(default);
 
 	public override Boolean Equals([NotNullWhen(true)] Object? obj) => obj switch
 	{
-		null => false,
 		<#=duName#> du => Equals(du),
-		_ => base.Equals(obj)
+<#foreach (var n in range) {#>
+		T<#=n#> t when GetIndex() == <#=n#> => Get<T<#=n#>>()?.Equals(t) ?? false,
+<#}#>
+		IDu du => Visit<DuEqualityVisitor, Boolean>(new(du)),
+		_ => false
 	};
 
 	public Boolean Equals(<#=duName#> other) => (GetIndex(), other.GetIndex()) switch
@@ -136,6 +153,9 @@ public readonly struct <#=duName#>
 		(null, not null) or (not null, null) => false,
 		var (x, y) => x.Equals(y)
 	};
+
+	public Boolean Equals<T>(T other) where T : notnull =>
+		TryPick(out T? matched) && EqualityComparer<T>.Default.Equals(matched, other);
 
 	public static Boolean operator ==(<#=duName#> left, <#=duName#> right) => left.Equals(right);
 	public static Boolean operator !=(<#=duName#> left, <#=duName#> right) => !(left == right);
