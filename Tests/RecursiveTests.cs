@@ -31,10 +31,10 @@ public partial class RecursiveTests
 		Assert.True(obj.TryGetValue("key2", out var array));
 		Assert.True(array.TryPick<JsonValue[]>(out var values));
 		Assert.NotNull(values[3]);
-		Assert.True(values[3].TryPick<Null>(out var @null));
+		Assert.True(values[3].TryPick<None>(out var @null));
 	}
 
-	[Du<JsonObject, JsonValue[], String, Int64, Double, Boolean, Null>]
+	[Du<JsonObject, JsonValue[], String, Int64, Double, Boolean, None>]
 	partial class JsonValue;
 
 	sealed class JsonObject : Dictionary<String, JsonValue>;
@@ -53,7 +53,7 @@ public partial class RecursiveTests
 		_ = JsonSerializer.Deserialize<Nullable>(json);
 	}
 
-	[Du<String, Null>]
+	[Du<String, None>]
 	partial class Nullable;
 
 	[Du<String, Guid>]

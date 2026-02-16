@@ -7,14 +7,14 @@ public static class DuExtensions
 {
 	extension<TDu>(TDu du) where TDu : IDu
 	{
-		public void Visit<TVisitor>(TVisitor visitor) where TVisitor : IVisitor<Null>
+		public void Visit<TVisitor>(TVisitor visitor) where TVisitor : IVisitor<None>
 		{
 			du.Visit(ref visitor);
 		}
 
-		public void Visit<TVisitor>(ref TVisitor visitor) where TVisitor : IVisitor<Null>
+		public void Visit<TVisitor>(ref TVisitor visitor) where TVisitor : IVisitor<None>
 		{
-			_ = du.Visit<TVisitor, Null>(ref visitor);
+			_ = du.Visit<TVisitor, None>(ref visitor);
 		}
 
 		public void Visit<T>(Action<T> action) where T : notnull

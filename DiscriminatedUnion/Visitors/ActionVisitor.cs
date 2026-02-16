@@ -2,9 +2,9 @@ using System.Runtime.CompilerServices;
 
 namespace NickStrupat;
 
-internal readonly struct ActionVisitor<T>(Action<T> action) : IVisitor<Null>
+internal readonly struct ActionVisitor<T>(Action<T> action) : IVisitor<None>
 {
-	Null IVisitor<Null>.Visit<TValue>(TValue value)
+	None IVisitor<None>.Visit<TValue>(TValue value)
 	{
 		if (typeof(T) == typeof(TValue))
 			action(Unsafe.As<TValue, T>(ref value));

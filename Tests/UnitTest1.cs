@@ -238,16 +238,16 @@ public class JsonTests
 	public void NullJson_NullInTheDu<T>(Dummy<T> _) where T : notnull
 	{
 		var mockStringAction = new Mock<Action<T>>();
-		var mockNullAction = new Mock<Action<Null>>();
+		var mockNullAction = new Mock<Action<None>>();
 
-		var du = JsonSerializer.Deserialize<Du<T, Null>>("null");
+		var du = JsonSerializer.Deserialize<Du<T, None>>("null");
 		du.Switch(
 			mockStringAction.Object,
 			mockNullAction.Object
 		);
 
 		mockStringAction.Verify(x => x(It.IsAny<T>()), Times.Never);
-		mockNullAction.Verify(x => x(It.IsAny<Null>()), Times.Once);
+		mockNullAction.Verify(x => x(It.IsAny<None>()), Times.Once);
 	}
 
 	public static IEnumerable<Object[]> NullableData =>
