@@ -10,170 +10,260 @@ using ObjectLayoutInspector;
 
 namespace Tests;
 
-public class UnitTest1
+public class BasicTests
 {
-    [Fact]
-    public void TestSize24() => TypeLayout.GetLayout<Du<Int32, String>>().Size.Should().Be(24);
+	[Fact]
+	public void TestSize24() => TypeLayout.GetLayout<Du<Int32, String>>().Size.Should().Be(24);
 
-    [Fact]
-    public void TestStuff()
-    {
-        var am1 = new Mock<Action<Int32>>();
-        var am2 = new Mock<Action<String>>();
+	[Fact]
+	public void DefaultInitialization_WhenSwitchIsInvoked_ThrowsInvalidInstanceException()
+	{
+		var am1 = new Mock<Action<Int32>>();
+		var am2 = new Mock<Action<String>>();
+		Du<Int32, String> du = default;
 
-        Du<Int32, String> du = 1;
-        du.Switch(am1.Object, am2.Object);
+		var action = () => du.Switch(am1.Object, am2.Object);
 
-        am1.Verify(x => x(It.IsAny<Int32>()), Times.Once);
-        am1.Verify(x => x(1), Times.Once);
-        am2.Verify(x => x(It.IsAny<String>()), Times.Never);
-    }
+		action.Should().Throw<InvalidInstanceException>();
+		am1.Verify(x => x(It.IsAny<Int32>()), Times.Never);
+		am2.Verify(x => x(It.IsAny<String>()), Times.Never);
+	}
 
-    private static void Throw<T>(T obj) => throw new();
+	[Fact]
+	public void DefaultInitialization_WhenMatchIsInvoked_ThrowsInvalidInstanceException()
+	{
+		var fm1 = new Mock<Func<Int32, Int32>>();
+		var fm2 = new Mock<Func<String, Int32>>();
+		Du<Int32, String> du = default;
 
-    [Fact]
-    public void TestSwitch_WithInt()
-    {
-        Du<Int32, String> du = 1;
-        du.Switch(x => x.Should().Be(1), Throw);
-    }
+		var action = () => du.Match(fm1.Object, fm2.Object);
 
-    [Fact]
-    public void TestSwitch_WithString()
-    {
-        Du<Int32, String> du = new("1");
-        du.Switch(Throw, A2);
+		action.Should().Throw<InvalidInstanceException>();
+		fm1.Verify(x => x(It.IsAny<Int32>()), Times.Never);
+		fm2.Verify(x => x(It.IsAny<String>()), Times.Never);
+	}
 
-        static void A2(String x) => x.Should().Be("1");
-    }
+	[Fact]
+	public void ConstructionWithNull_Throws()
+	{
+		Du<Int32, String> du;
+		var action = () => du = new(null!);
+		action.Should().Throw<ArgumentNullException>();
+	}
 
-    [Fact]
-    public void TestMatch_WithInt()
-    {
-        Du<Int32, String> du = 1;
-        du.Match(x => x, _ => 0).Should().Be(1);
-    }
+	[Fact]
+	public void TestSwitch_WithIntAndString()
+	{
+		var am1 = new Mock<Action<Int32>>();
+		var am2 = new Mock<Action<String>>();
+		Du<Int32, String> du = 42;
 
-    [Fact]
-    public void TestMatch_WithString()
-    {
-        Du<Int32, String> du = "test";
-        du.Match(Throw, A2).Should().Be("test".Length);
+		du.Switch(am1.Object, am2.Object);
 
-        static Int32? Throw<TX>(TX _) => throw new();
+		am1.Verify(x => x(It.IsAny<Int32>()), Times.Once);
+		am1.Verify(x => x(42), Times.Once);
+		am2.Verify(x => x(It.IsAny<String>()), Times.Never);
+	}
 
-        static Int32? A2(String x)
-        {
-            x.Should().Be("test");
-            return x.Length;
-        }
-    }
+	[Fact]
+	public void TestSwitch_WithInt()
+	{
+		var am1 = new Mock<Action<Int32>>();
+		var am2 = new Mock<Action<String>>();
+		Du<Int32, String> du = 1;
 
-    public record Wow(Du<Int32, String> Foo, Du<Int32, String> Bar);
+		du.Switch(am1.Object, am2.Object);
 
-    [Fact]
-    public void JsonTest()
-    {
-        var du = new Wow(new(1), new("test"));
-        var json = JsonSerializer.Serialize(du);
-        var du2 = JsonSerializer.Deserialize<Wow>(json)!;
-        du2.Foo.Switch(x => x.Should().Be(1), Throw);
-        du2.Bar.Switch(Throw, x => x.Should().Be("test"));
-    }
+		am1.Verify(x => x(It.IsAny<Int32>()), Times.Once);
+		am1.Verify(x => x(1), Times.Once);
+		am2.Verify(x => x(It.IsAny<String>()), Times.Never);
+	}
 
-    [Fact]
-    public void JsonSimpleAndComplex()
-    {
-        Du<String, Foo> du = new Foo("Test");
-        var json = JsonSerializer.Serialize(du);
-        var du2 = JsonSerializer.Deserialize<Du<String, Foo>>(json);
-        du2.Switch(Throw, x => x.Name.Should().Be("Test"));
-    }
+	[Fact]
+	public void TestSwitch_WithString()
+	{
+		var am1 = new Mock<Action<Int32>>();
+		var am2 = new Mock<Action<String>>();
+		Du<Int32, String> du = new("1");
 
-    internal class Foo(String name)
-    {
-        public Int32 Id { get; set; }
-        public String Name { get; set; } = name;
-    }
+		du.Switch(am1.Object, am2.Object);
 
-    [Fact]
-    public void JsonSimpleAndArray()
-    {
-        Du<String, Foo[]> du = new Foo[] { new("test"), new("test2") };
-        var json = JsonSerializer.Serialize(du);
-        json.Should().Be("""
-                         [{"Id":0,"Name":"test"},{"Id":0,"Name":"test2"}]
-                         """);
-        var du2 = JsonSerializer.Deserialize<Du<String, Foo[]>>(json);
-        du2.Switch(Throw, x => x.Length.Should().Be(2));
-    }
+		am1.Verify(x => x(It.IsAny<Int32>()), Times.Never);
+		am2.Verify(x => x(It.IsAny<String>()), Times.Once);
+		am2.Verify(x => x("1"), Times.Once);
+	}
 
-    [Fact]
-    public void JsonNested()
-    {
-        var ma1 = Mock.Of<Action<String>>();
-        var ma2 = Mock.Of<Action<Int32>>();
-        var ma3 = Mock.Of<Action<Foo>>();
+	[Fact]
+	public void TestMatch_WithInt()
+	{
+		var fm1 = new Mock<Func<Int32, String>>();
+		var fm2 = new Mock<Func<String, String>>();
+		Du<Int32, String> du = 1;
 
-        Du<String, Du<Int32, Foo>> du2 = new Du<Int32, Foo>(1);
+		var func = () => du.Match(fm1.Object, fm2.Object);
 
-        var json = JsonSerializer.Serialize(du2);
-        json.Should().Be("1");
+		func.Should().NotThrow();
+		fm1.Verify(x => x(It.IsAny<Int32>()), Times.Once);
+		fm1.Verify(x => x(1), Times.Once);
+		fm2.Verify(x => x(It.IsAny<String>()), Times.Never);
+	}
 
-        var du3 = JsonSerializer.Deserialize<Du<String, Du<Int32, Foo>>>(json);
-        du3.Switch(
-            ma1,
-            x => x.Switch(
-                ma2,
-                ma3
-            )
-        );
+	[Fact]
+	public void TestMatch_WithString()
+	{
+		var fm1 = new Mock<Func<Int32, String>>();
+		var fm2 = new Mock<Func<String, String>>();
+		Du<Int32, String> du = "test";
 
-        Mock.Get(ma1).Verify(x => x(It.IsAny<String>()), Times.Never);
-        Mock.Get(ma2).Verify(x => x(It.IsAny<Int32>()), Times.Once);
-        Mock.Get(ma2).Verify(x => x(1), Times.Once);
-        Mock.Get(ma3).Verify(x => x(It.IsAny<Foo>()), Times.Never);
-    }
+		var func = () => du.Match(fm1.Object, fm2.Object);
 
-    [Theory]
-    [MemberData(nameof(NullableData))]
-    public void NullJson_NoNullInTheDu<T>(Dummy<T> _) where T : notnull
-    {
-        var func = () => JsonSerializer.Deserialize<Du<T, Int32>>("null");
-        func.Should().Throw<JsonException>().Where(x => x.Message == $"No match was found for converting the JSON into a {nameof(Du<,>)}<{typeof(T).Name}, Int32>");
-    }
+		func.Should().NotThrow();
+		fm1.Verify(x => x(It.IsAny<Int32>()), Times.Never);
+		fm2.Verify(x => x(It.IsAny<String>()), Times.Once);
+		fm2.Verify(x => x("test"), Times.Once);
+	}
+}
 
-    [Theory]
-    [MemberData(nameof(NullableData))]
-    public void NullJson_NullInTheDu<T>(Dummy<T> _) where T : notnull
-    {
-        var mockStringAction = new Mock<Action<T>>();
-        var mockNullAction = new Mock<Action<Null>>();
+public class JsonTests
+{
+	public record Wow(Du<Int32, String> Foo, Du<Int32, String> Bar);
 
-        var du = JsonSerializer.Deserialize<Du<T, Null>>("null");
-        du.Switch(
-            mockStringAction.Object,
-            mockNullAction.Object
-        );
+	[Fact]
+	public void JsonTest()
+	{
+		var du = new Wow(new(1), new("test"));
 
-        mockStringAction.Verify(x => x(It.IsAny<T>()), Times.Never);
-        mockNullAction.Verify(x => x(It.IsAny<Null>()), Times.Once);
-    }
+		var json = JsonSerializer.Serialize(du);
+		var du2 = JsonSerializer.Deserialize<Wow>(json)!;
 
-    public static IEnumerable<Object[]> NullableData =>
-    [
-        [new Dummy<String>()],
-        [new Dummy<String?>()],
-        [new Dummy<Int32>()],
-        [new Dummy<Int32?>()],
-    ];
+		{
+			var am1 = new Mock<Action<Int32>>();
+			var am2 = new Mock<Action<String>>();
+			du2.Foo.Switch(am1.Object, am2.Object);
+			am1.Verify(x => x(It.IsAny<Int32>()), Times.Once);
+			am1.Verify(x => x(1), Times.Once);
+			am2.Verify(x => x(It.IsAny<String>()), Times.Never);
+		}
 
-    public struct Dummy<T>;
+		{
+			var am1 = new Mock<Action<Int32>>();
+			var am2 = new Mock<Action<String>>();
+			du2.Bar.Switch(am1.Object, am2.Object);
+			am1.Verify(x => x(It.IsAny<Int32>()), Times.Never);
+			am2.Verify(x => x(It.IsAny<String>()), Times.Once);
+			am2.Verify(x => x("test"), Times.Once);
+		}
+	}
 
-    public static IEnumerable<Object[]> Data =>
-    [
-        ["test"],
-        [1],
-        [new Foo("test")]
-    ];
+	[Fact]
+	public void JsonSimpleAndComplex()
+	{
+		var am1 = new Mock<Action<String>>();
+		var am2 = new Mock<Action<Foo>>();
+		Du<String, Foo> du = new Foo("Test");
+
+		var json = JsonSerializer.Serialize(du);
+		var du2 = JsonSerializer.Deserialize<Du<String, Foo>>(json);
+
+		du2.Switch(am1.Object, am2.Object);
+		am1.Verify(x => x(It.IsAny<String>()), Times.Never);
+        am2.Verify(x => x(It.IsAny<Foo>()), Times.Once);
+        am2.Verify(x => x(It.Is<Foo>(f => f.Name == "Test")), Times.Once);
+	}
+
+	internal class Foo(String name)
+	{
+		public Int32 Id { get; set; }
+		public String Name { get; set; } = name;
+	}
+
+	[Fact]
+	public void JsonSimpleAndArray()
+	{
+		var am1 = new Mock<Action<String>>();
+		var am2 = new Mock<Action<Foo[]>>();
+		Du<String, Foo[]> du = new Foo[] { new("test"), new("test2") };
+
+		var json = JsonSerializer.Serialize(du);
+
+		json.Should().Be("""
+		                 [{"Id":0,"Name":"test"},{"Id":0,"Name":"test2"}]
+		                 """);
+
+		var du2 = JsonSerializer.Deserialize<Du<String, Foo[]>>(json);
+		du2.Switch(am1.Object, am2.Object);
+        am1.Verify(x => x(It.IsAny<String>()), Times.Never);
+        am2.Verify(x => x(It.IsAny<Foo[]>()), Times.Once);
+        am2.Verify(x => x(It.Is<Foo[]>(arr => arr.Length == 2 && arr[0].Name == "test" && arr[1].Name == "test2")), Times.Once);
+	}
+
+	[Fact]
+	public void JsonNested()
+	{
+		var ma1 = Mock.Of<Action<String>>();
+		var ma2 = Mock.Of<Action<Int32>>();
+		var ma3 = Mock.Of<Action<Foo>>();
+
+		Du<String, Du<Int32, Foo>> du2 = new Du<Int32, Foo>(1);
+
+		var json = JsonSerializer.Serialize(du2);
+		json.Should().Be("1");
+
+		var du3 = JsonSerializer.Deserialize<Du<String, Du<Int32, Foo>>>(json);
+		du3.Switch(
+			ma1,
+			x => x.Switch(
+				ma2,
+				ma3
+			)
+		);
+
+		Mock.Get(ma1).Verify(x => x(It.IsAny<String>()), Times.Never);
+		Mock.Get(ma2).Verify(x => x(It.IsAny<Int32>()), Times.Once);
+		Mock.Get(ma2).Verify(x => x(1), Times.Once);
+		Mock.Get(ma3).Verify(x => x(It.IsAny<Foo>()), Times.Never);
+	}
+
+	[Theory]
+	[MemberData(nameof(NullableData))]
+	public void NullJson_NoNullInTheDu<T>(Dummy<T> _) where T : notnull
+	{
+		var func = () => JsonSerializer.Deserialize<Du<T, Int32>>("null");
+		func.Should().Throw<JsonException>().Where(x =>
+			x.Message == $"No match was found for converting the JSON into a {nameof(Du<,>)}<{typeof(T).Name}, Int32>");
+	}
+
+	[Theory]
+	[MemberData(nameof(NullableData))]
+	public void NullJson_NullInTheDu<T>(Dummy<T> _) where T : notnull
+	{
+		var mockStringAction = new Mock<Action<T>>();
+		var mockNullAction = new Mock<Action<Null>>();
+
+		var du = JsonSerializer.Deserialize<Du<T, Null>>("null");
+		du.Switch(
+			mockStringAction.Object,
+			mockNullAction.Object
+		);
+
+		mockStringAction.Verify(x => x(It.IsAny<T>()), Times.Never);
+		mockNullAction.Verify(x => x(It.IsAny<Null>()), Times.Once);
+	}
+
+	public static IEnumerable<Object[]> NullableData =>
+	[
+		[new Dummy<String>()],
+		[new Dummy<String?>()],
+		[new Dummy<Int32>()],
+		[new Dummy<Int32?>()],
+	];
+
+	public struct Dummy<T>;
+
+	public static IEnumerable<Object[]> Data =>
+	[
+		["test"],
+		[1],
+		[new Foo("test")]
+	];
 }

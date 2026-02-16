@@ -25,16 +25,16 @@ for (var i = 1; i != MaxDuTypes; i++)
 #>
 
 [JsonConverter(typeof(DuJsonConverter))]
-[DebuggerTypeProxy(typeof(Du<<#=commas#>>.DebugView))]
+[DebuggerTypeProxy(typeof(Du.DebugView))]
 public readonly struct <#=duName#>
 	: IEquatable<<#=duName#>>
 	, IDu<<#=duName#>>
 	<#=cons#>
 {
-	private readonly UnmanagedStorage unmanaged;
-	private readonly Object? managed;
+	internal readonly UnmanagedStorage unmanaged;
+	internal readonly Object? managed;
 
-	private T Get<T>() => Du.Get<T>(managed, in unmanaged);
+	private T Get<T>() where T : notnull => Du.Get<T>(managed, in unmanaged);
 
 	private Byte GetIndexUnsafe() => Du.GetIndexUnsafe(managed, in unmanaged);
 	private Byte GetIndex() => Du.GetIndex(managed, in unmanaged);
@@ -47,55 +47,30 @@ public readonly struct <#=duName#>
 	public static implicit operator <#=duName#>(T<#=n#> value) => new(value);
 <#}#>
 
-	public Boolean TryPick<T>([NotNullWhen(true)] out T? matched) where T : notnull
-	{
-		switch (GetIndex())
-		{
-<#foreach (var n in range) {#>
-			case <#=n#> when typeof(T) == typeof(T<#=n#>):
-<#}#>
-				matched = Get<T>();
-				return true;
-			default:
-				matched = default!;
-				return false;
-		}
-	}
-
-	public void Visit<T>(Action<T> action) where T : notnull
-	{
-		if (TryPick(out T? matched))
-			action(matched);
-	}
-
-	public void Visit<TVisitor>(TVisitor visitor) where TVisitor : IVisitor
-	{
-		switch (GetIndexUnsafe())
-		{
-<#foreach (var n in range) {#>
-			case <#=n#>: visitor.Visit(Get<T<#=n#>>()); break;
-<#}#>
-			default: throw new InvalidInstanceException();
-		}
-	}
-
 	public TResult Visit<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult>
+		=> Visit<TVisitor, TResult>(ref visitor);
+
+	public TResult Visit<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult>
 	{
 		switch (GetIndexUnsafe())
 		{
-			case 1: return visitor.Visit(Get<T1>());
-			case 2: return visitor.Visit(Get<T2>());
+<#foreach (var n in range) {#>
+			case <#=n#>: return visitor.Visit(Get<T<#=n#>>());
+<#}#>
 			default: throw new InvalidInstanceException();
 		}
 	}
 
-	public TResult Match<TResult>(<#=matchParams#>) => GetIndexUnsafe() switch
+	public TResult Match<TResult>(<#=matchParams#>)
 	{
+		switch (GetIndexUnsafe())
+		{
 <#foreach (var n in range) {#>
-		<#=n#> => f<#=n#>(Get<T<#=n#>>()),
+			case <#=n#>: return f<#=n#>(Get<T<#=n#>>());
 <#}#>
-		_ => throw new InvalidInstanceException()
-	};
+			default: throw new InvalidInstanceException();
+		}
+	}
 
 	public void Switch(<#=switchParams#>)
 	{
@@ -123,8 +98,6 @@ public readonly struct <#=duName#>
 		throw new JsonException("No match was found for converting the JSON into a " + typeof(<#=duName#>).NameWithGenericArguments);
 	}
 
-	public void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options) => Visit(new JsonSerializerVisitor(writer, options));
-
 	public override String ToString() => Visit<ToStringVisitor, String>(default);
 
 	public override Int32 GetHashCode() => Visit<GetHashCodeVisitor, Int32>(default);
@@ -147,37 +120,15 @@ public readonly struct <#=duName#>
 		_ => false
 	};
 
-	private Boolean Equals<T>(<#=duName#> other) => (Get<T>(), other.Get<T>()) switch
+	private Boolean Equals<T>(<#=duName#> other) where T : notnull => (Get<T>(), other.Get<T>()) switch
 	{
 		(null, null) => true,
 		(null, not null) or (not null, null) => false,
 		var (x, y) => x.Equals(y)
 	};
 
-	public Boolean Equals<T>(T other) where T : notnull =>
-		TryPick(out T? matched) && EqualityComparer<T>.Default.Equals(matched, other);
-
 	public static Boolean operator ==(<#=duName#> left, <#=duName#> right) => left.Equals(right);
 	public static Boolean operator !=(<#=duName#> left, <#=duName#> right) => !(left == right);
-
-	private sealed class DebugView
-	{
-		private readonly <#=duName#> du;
-		public DebugView(<#=duName#> du) => this.du = du;
-
-		public UnmanagedStorage unmanaged => du.unmanaged;
-		public Object? managed => du.managed;
-
-		public Byte Index => du.GetIndex();
-
-		public Object? Value => du.GetIndex() switch
-		{
-<#foreach (var n in range) {#>
-			<#=n#> => du.Get<T<#=n#>>(),
-<#}#>
-			_ => null
-		};
-	}
 }
 <#
 	// var templateDirectory = Path.GetDirectoryName(Host.TemplateFile) ?? throw new("ruh roh");

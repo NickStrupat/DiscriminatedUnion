@@ -110,7 +110,7 @@ public class AdvancedTests
 	public void TestTryPick_Success()
 	{
 		Du<Int32, String> du = 42;
-		var result = du.TryPick<Int32>(out var value);
+		var result = du.TryPick(out Int32 value);
 		result.Should().BeTrue();
 		value.Should().Be(42);
 	}
@@ -119,7 +119,7 @@ public class AdvancedTests
 	public void TestTryPick_Failure()
 	{
 		Du<Int32, String> du = "test";
-		var result = du.TryPick<Int32>(out var value);
+		var result = du.TryPick(out Int32 value);
 		result.Should().BeFalse();
 		value.Should().Be(default);
 	}
@@ -128,10 +128,10 @@ public class AdvancedTests
 	public void TestTryPick_MultipleTypes()
 	{
 		Du<Int32, String, Double> du = 3.14;
-		du.TryPick<Double>(out var value).Should().BeTrue();
+		du.TryPick(out Double value).Should().BeTrue();
 		value.Should().Be(3.14);
-		du.TryPick<Int32>(out _).Should().BeFalse();
-		du.TryPick<String>(out _).Should().BeFalse();
+		du.TryPick(out Int32 _).Should().BeFalse();
+		du.TryPick(out String? _).Should().BeFalse();
 	}
 
 	[Fact]
@@ -141,7 +141,7 @@ public class AdvancedTests
 		var visitedString = false;
 
 		Du<Int32, String> du = 42;
-		du.Visit<Int32>(x =>
+		du.Visit((Int32 x) =>
 		{
 			visitedInt = true;
 			x.Should().Be(42);
@@ -155,7 +155,7 @@ public class AdvancedTests
 	public void TestVisit_NoMatchDoesNotThrow()
 	{
 		Du<Int32, String> du = 42;
-		Action act = () => du.Visit<String>(_ => throw new Exception("Should not be called"));
+		Action act = () => du.Visit((String _) => throw new Exception("Should not be called"));
 		act.Should().NotThrow();
 	}
 
@@ -232,7 +232,7 @@ public class AdvancedTests
 	public void TestImplicitConversion_FromInt32()
 	{
 		Du<Int32, String> du = 42;
-		du.TryPick<Int32>(out var value).Should().BeTrue();
+		du.TryPick(out Int32 value).Should().BeTrue();
 		value.Should().Be(42);
 	}
 
@@ -274,7 +274,7 @@ public class AdvancedTests
 		var json = JsonSerializer.Serialize(du);
 		var deserialized = JsonSerializer.Deserialize<Du<String, TestObject>>(json);
 		deserialized.TryPick<TestObject>(out var deserializedObj).Should().BeTrue();
-		deserializedObj.Id.Should().Be(1);
+		deserializedObj!.Id.Should().Be(1);
 		deserializedObj.Name.Should().Be("Test");
 		deserializedObj.Values.Should().Equal(1, 2, 3);
 	}

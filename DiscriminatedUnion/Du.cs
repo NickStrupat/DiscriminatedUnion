@@ -6,14 +6,14 @@ namespace NickStrupat;
 
 internal static class Du
 {
-	public static (Object?, UnmanagedStorage) Init<T>(ref T instance, Byte index) =>
+	public static (Object?, UnmanagedStorage) Init<T>(ref T instance, Byte index) where T : notnull =>
 		TypeInfoCache<T>.CanStoreInUnmanagedStorage
 			? (Indexes[index], AsUnmanaged(ref instance))
 			: TypeInfoCache<T>.IsValueType
 				? (new Box<T>(instance), new UnmanagedStorage(index))
 				: (instance, new UnmanagedStorage(index));
 
-	public static T Get<T>(Object? managed, ref readonly UnmanagedStorage unmanagedBytes) =>
+	public static T Get<T>(Object? managed, ref readonly UnmanagedStorage unmanagedBytes) where T : notnull =>
 		TypeInfoCache<T>.CanStoreInUnmanagedStorage
 			? UnmanagedAs<T>(in unmanagedBytes)
 			: TypeInfoCache<T>.IsValueType
@@ -30,7 +30,7 @@ internal static class Du
 			? index
 			: throw new InvalidInstanceException();
 
-	private sealed record Box<T>(T Value);
+	private sealed record Box<T>(T Value) where T : notnull;
 
 	private static UnmanagedStorage AsUnmanaged<T>(ref T source)
 	{
@@ -60,4 +60,32 @@ internal static class Du
 
 	public sealed record Index(Byte Value);
 	public static readonly ImmutableArray<Index> Indexes;
+
+	public sealed class DebugView(IDu du)
+	{
+		private readonly IDu du = du; // hides the primary constructor parameter from the debugger display (at least in Rider)
+
+		public Byte Index
+		{
+			get
+			{
+				var unmanaged = du.GetFieldValue<UnmanagedStorage>(nameof(Du<,>.unmanaged));
+				return GetIndex(du.GetFieldValue<Object>(nameof(Du<,>.managed))!, in unmanaged);
+			}
+		}
+
+		public Object Value
+		{
+			get
+			{
+				var visitor = new Visitor();
+				return du.Visit<Visitor, Object>(ref visitor);
+			}
+		}
+
+		private readonly struct Visitor : IVisitor<Object>
+		{
+			Object IVisitor<Object>.Visit<TValue>(TValue value) => value;
+		}
+	}
 }

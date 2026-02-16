@@ -97,7 +97,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 		var classBody =
 			$$"""
 			[JsonConverter(typeof(Converter))]
-			sealed partial class {{du2g.Name}} : IDu<Du<{{typeNames}}>> {
+			sealed partial class {{du2g.Name}} : IDu {
 				private readonly Du<{{typeNames}}> du;
 				private {{du2g.Name}}(Du<{{typeNames}}> du) => this.du = du;
 
@@ -105,16 +105,14 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 
 				{{convOps}}
 
-				public void Visit<TVisitor>(TVisitor visitor) where TVisitor : IVisitor => du.Visit(visitor);
-				public TResult Visit<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult> => du.Visit<TVisitor, TResult>(visitor);
+				public TResult Visit<TVisitor, TResult>(TVisitor visitor)where TVisitor : IVisitor<TResult> => Visit<TVisitor, TResult>(ref visitor);
+				public TResult Visit<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult> => du.Visit<TVisitor, TResult>(ref visitor);
 
 				public Boolean TryPick<T>(out T matched) where T : notnull => du.TryPick(out matched);
 				public void Visit<T>(Action<T> action) where T : notnull => du.Visit(action);
 				public TResult Match<TResult>({{funcParams}}) => du.Match({{funcArgs}});
 				public void Switch({{actionParams}}) => du.Switch({{actionArgs}});
 
-				static Du<{{typeNames}}> IDu<Du<{{typeNames}}>>.Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions options) => Du<{{typeNames}}>.Deserialize(ref reader, options);
-				void IDu<Du<{{typeNames}}>>.Serialize(Utf8JsonWriter writer, JsonSerializerOptions options) => du.Serialize(writer, options);
 				public static ImmutableArray<Type> Types => Du<{{typeNames}}>.Types;
 
 				private sealed class Converter : JsonConverter<{{du2g.Name}}> {

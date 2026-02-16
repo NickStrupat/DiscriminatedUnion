@@ -21,7 +21,7 @@ internal sealed class DuJsonConverter : JsonConverterFactory
 
     private static readonly ConcurrentDictionary<Type, JsonConverter> cache = new();
 
-    private sealed class Converter<T> : JsonConverter<T> where T : IDu<T>
+    private sealed class Converter<T> : JsonConverter<T> where T : struct, IDu<T>
     {
         public override T Read(ref Utf8JsonReader reader, Type _, JsonSerializerOptions options)
         {
