@@ -108,24 +108,11 @@ public readonly struct <#=duName#>
 <#foreach (var n in range) {#>
 		T<#=n#> t when GetIndex() == <#=n#> => Get<T<#=n#>>()?.Equals(t) ?? false,
 <#}#>
-		IDu du => Visit<DuEqualityVisitor, Boolean>(new(du)),
+		IDu du => Visit<DuEqualityVisitor<IDu>, Boolean>(new(du)),
 		_ => false
 	};
 
-	public Boolean Equals(<#=duName#> other) => (GetIndex(), other.GetIndex()) switch
-	{
-<#foreach (var n in range) {#>
-		(<#=n#>, <#=n#>) => Equals<T<#=n#>>(other),
-<#}#>
-		_ => false
-	};
-
-	private Boolean Equals<T>(<#=duName#> other) where T : notnull => (Get<T>(), other.Get<T>()) switch
-	{
-		(null, null) => true,
-		(null, not null) or (not null, null) => false,
-		var (x, y) => x.Equals(y)
-	};
+	public Boolean Equals(<#=duName#> other) => Visit<DuEqualityVisitor<<#=duName#>>, Boolean>(new(other));
 
 	public static Boolean operator ==(<#=duName#> left, <#=duName#> right) => left.Equals(right);
 	public static Boolean operator !=(<#=duName#> left, <#=duName#> right) => !(left == right);

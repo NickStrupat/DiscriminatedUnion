@@ -23,6 +23,18 @@ public class AdvancedTests
 	}
 
 	[Fact]
+	public void TestEquality_DifferentTypesAndStaticSubTypeButSameValue()
+	{
+		Foo foo = new();
+		Du<Int32, Foo> du1 = foo;
+		Du<Bar, Int32> du2 = foo;
+		du1.Should().Be(du2);
+	}
+
+	private class Foo : Bar;
+	private class Bar;
+
+	[Fact]
 	public void TestEquality_SameInt32Value()
 	{
 		Du<Int32, String> du1 = 42;
