@@ -4,7 +4,7 @@ using NickStrupat;
 
 namespace Tests;
 
-public class AdvancedTests
+public partial class AdvancedTests
 {
 	[Fact]
 	public void TestEquality_SameInstance()
@@ -33,6 +33,18 @@ public class AdvancedTests
 
 	private class Foo : Bar;
 	private class Bar;
+
+	[Fact]
+	public void TestEqualityOfClassDu_DifferentTypesAndStaticSubTypeButSameValue()
+	{
+		Foo foo = new();
+		Du1 du1 = foo;
+		Du2 du2 = foo;
+		du1.Should().Be(du2);
+	}
+
+	[Du<Int32, Foo>] partial class Du1;
+	[Du<Bar, Int32>] partial class Du2;
 
 	[Fact]
 	public void TestEquality_SameInt32Value()

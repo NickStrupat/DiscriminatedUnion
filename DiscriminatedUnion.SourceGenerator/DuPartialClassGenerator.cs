@@ -97,7 +97,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 		var classBody =
 			$$"""
 			[JsonConverter(typeof(Converter))]
-			sealed partial class {{du2g.Name}} : IDu {
+			sealed partial class {{du2g.Name}} : IDu, IEquatable<{{du2g.Name}}> {
 				private readonly Du<{{typeNames}}> du;
 				private {{du2g.Name}}(Du<{{typeNames}}> du) => this.du = du;
 
@@ -112,6 +112,10 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				public void Switch({{actionParams}}) => du.Switch({{actionArgs}});
 
 				public static ImmutableArray<Type> Types => Du<{{typeNames}}>.Types;
+				
+				public override Int32 GetHashCode() => du.GetHashCode();
+				public override Boolean Equals(Object obj) => du.Equals(obj);
+				public Boolean Equals({{du2g.Name}} other) => du.Equals(other.du);
 
 				private sealed class Converter : JsonConverter<{{du2g.Name}}> {
 					public override Boolean HandleNull => true;
