@@ -13,7 +13,7 @@
 
     <!-- Automatically check for null arguments when the parameter is annotated as non-nullable -->
     <ItemGroup>
-      <PackageReference Include="RuntimeNullables.Fody" Version="2.0.0" PrivateAssets='All' />
+      <PackageReference Include="RuntimeNullables.Fody" Version="2.1.0" PrivateAssets='All' />
     </ItemGroup>
 
     <PropertyGroup>
