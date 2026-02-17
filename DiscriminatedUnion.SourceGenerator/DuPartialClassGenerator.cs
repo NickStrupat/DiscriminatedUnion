@@ -121,10 +121,10 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 					public override Boolean HandleNull => true;
 
 					public override {{du2g.Name}} Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-						new(Du<{{typeNames}}>.Deserialize(ref reader, options));
+						new(JsonSerializer.Deserialize<Du<{{typeNames}}>>(ref reader, options));
 
 					public override void Write(Utf8JsonWriter writer, {{du2g.Name}} value, JsonSerializerOptions options) =>
-						value.du.Serialize(writer, options);
+						JsonSerializer.Serialize(writer, value.du, options);
 				}
 			}
 			""";
