@@ -114,8 +114,8 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				public static ImmutableArray<Type> Types => Du<{{typeNames}}>.Types;
 				
 				public override Int32 GetHashCode() => du.GetHashCode();
-				public override Boolean Equals(Object obj) => du.Equals(obj);
-				public Boolean Equals({{du2g.Name}} other) => du.Equals(other.du);
+				public override Boolean Equals(Object? obj) => du.Equals(obj);
+				public Boolean Equals({{du2g.Name}}? other) => other is not null && du.Equals(other.du);
 
 				private sealed class Converter : JsonConverter<{{du2g.Name}}> {
 					public override Boolean HandleNull => true;
@@ -139,6 +139,8 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 			using System.Text.Json;
 			using System.Text.Json.Serialization;
 			using NickStrupat;
+			
+			#nullable enable
 
 			namespace {{du2g.Namespace}};
 
