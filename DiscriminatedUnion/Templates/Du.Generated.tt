@@ -106,7 +106,7 @@ public readonly struct <#=duName#>
 	{
 		<#=duName#> du => Equals(du),
 <#foreach (var n in range) {#>
-		T<#=n#> t when GetIndex() == <#=n#> => Get<T<#=n#>>()?.Equals(t) ?? false,
+		T<#=n#> t when GetIndex() == <#=n#> => Get<T<#=n#>>().Equals(t),
 <#}#>
 		IDu du => Visit<DuEqualityVisitor<IDu>, Boolean>(new(du)),
 		_ => false
