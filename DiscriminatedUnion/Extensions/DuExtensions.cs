@@ -59,10 +59,4 @@ public static class DuExtensions
 			throw new InvalidOperationException($"The discriminated union does not hold an instance of type {typeof(T).FullName}.");
 		}
 	}
-
-	// public static Boolean Equals(this (IDu du1, IDu du2) pair)
-	// {
-	// 	var (du1, du2) = pair;
-	//
-	// }
 }
