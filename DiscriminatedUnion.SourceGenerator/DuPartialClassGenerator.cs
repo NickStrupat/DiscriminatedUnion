@@ -1,6 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -48,7 +46,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 			return null;
 
 		String className = classSymbol.Name;
-		String @namespace = classSymbol.ContainingNamespace?.ToDisplayString() ?? String.Empty;
+		String? @namespace = classSymbol.ContainingNamespace is { IsGlobalNamespace: false } gns ? gns.ToDisplayString() : null;
 
 		var nestedClasses = new List<String>();
 		var currentType = classSymbol.ContainingType;
@@ -78,7 +76,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 
 		// Create a separate partial class file for each enum
 		var fileName = value.NestedClasses.Count > 0 ? String.Join(".", value.NestedClasses) + "." : String.Empty;
-		spc.AddSource($"DuGenerated.{value.Namespace}.{fileName}{value.Name}.g.cs", SourceText.From(result, Encoding.UTF8));
+		spc.AddSource($"DuGenerated.{value.Namespace ?? "global"}.{fileName}{value.Name}.g.cs", SourceText.From(result, Encoding.UTF8));
 	}
 
 	private static String GenerateExtensionClass(DuToGenerate du2g)
@@ -131,6 +129,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 
 		var openingBrackets = String.Join("\n", du2g.NestedClasses.Select(nc => $"partial class {nc} {{"));
 		var closingBrackets = String.Join("\n", Enumerable.Repeat("}", du2g.NestedClasses.Count));
+		var @namespace = du2g.Namespace is not null ? $"namespace {du2g.Namespace};" : String.Empty;
 
 		return
 			$$"""
@@ -142,7 +141,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 			
 			#nullable enable
 
-			namespace {{du2g.Namespace}};
+			{{@namespace}}
 
 			{{openingBrackets}}
 			{{classBody}}
@@ -151,10 +150,10 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 	}
 }
 
-public readonly struct DuToGenerate(String name, List<String> typeNames, String @namespace, List<String> nestedClasses)
+public readonly struct DuToGenerate(String name, List<String> typeNames, String? @namespace, List<String> nestedClasses)
 {
 	public String Name => name;
 	public List<String> TypeNames => typeNames;
-	public String Namespace => @namespace;
+	public String? Namespace => @namespace;
 	public List<String> NestedClasses => nestedClasses;
 }
