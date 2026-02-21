@@ -14,7 +14,7 @@ public static class DuExtensions
 
 		public void Visit<TVisitor>(ref TVisitor visitor) where TVisitor : IVisitor<None>
 		{
-			_ = du.Visit<TVisitor, None>(ref visitor);
+			_ = du.Accept<TVisitor, None>(ref visitor);
 		}
 
 		public void Visit<T>(Action<T> action) where T : notnull
@@ -25,7 +25,7 @@ public static class DuExtensions
 		public TResult Visit<TVisitor, TResult>(out TVisitor visitor) where TVisitor : IVisitor<TResult>, new()
 		{
 			visitor = new();
-			return du.Visit<TVisitor, TResult>(ref visitor);
+			return du.Accept<TVisitor, TResult>(ref visitor);
 		}
 
 		public void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options) => du.Visit(new JsonSerializerVisitor(writer, options));
@@ -36,7 +36,7 @@ public static class DuExtensions
 		public Boolean TryPick<T>([NotNullWhen(true)] out T? matched) where T : notnull
 		{
 			var visitor = new TryPickVisitor<T>();
-			var result = du.Visit<TryPickVisitor<T>, Boolean>(ref visitor);
+			var result = du.Accept<TryPickVisitor<T>, Boolean>(ref visitor);
 			matched = visitor.Picked!;
 			return result;
 		}
@@ -47,7 +47,7 @@ public static class DuExtensions
 		public Boolean TryPick<T>([NotNullWhen(true)] out T? matched) where T : notnull
 		{
 			var visitor = new TryPickVisitor<T>();
-			var result = du.Visit<TryPickVisitor<T>, Boolean>(ref visitor);
+			var result = du.Accept<TryPickVisitor<T>, Boolean>(ref visitor);
 			matched = visitor.Picked!;
 			return result;
 		}

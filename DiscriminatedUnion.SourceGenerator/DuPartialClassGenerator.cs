@@ -103,8 +103,8 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 
 				{{convOps}}
 
-				public TResult Visit<TVisitor, TResult>(TVisitor visitor)where TVisitor : IVisitor<TResult> => Visit<TVisitor, TResult>(ref visitor);
-				public TResult Visit<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult> => du.Visit<TVisitor, TResult>(ref visitor);
+				public TResult Accept<TVisitor, TResult>(TVisitor visitor)where TVisitor : IVisitor<TResult> => Accept<TVisitor, TResult>(ref visitor);
+				public TResult Accept<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult> => du.Accept<TVisitor, TResult>(ref visitor);
 
 				public TResult Match<TResult>({{funcParams}}) => du.Match({{funcArgs}});
 				public void Switch({{actionParams}}) => du.Switch({{actionArgs}});

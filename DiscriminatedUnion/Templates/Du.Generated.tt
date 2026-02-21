@@ -39,18 +39,20 @@ public readonly struct <#=duName#>
 	private Byte GetIndexUnsafe() => Du.GetIndexUnsafe(managed, in unmanaged);
 	private Byte GetIndex() => Du.GetIndex(managed, in unmanaged);
 
+	private static <#=duName#> InitUnsafe<T>(ref T instance, Byte index) where T : notnull => new(Du.Init(ref instance, index));
+	private Du((Object? managed, UnmanagedStorage unmanaged) x) => (this.managed, this.unmanaged) = (x.managed, x.unmanaged);
 <#foreach (var n in range) {#>
-	public Du(T<#=n#> instance<#=n#>) => (managed, unmanaged) = Du.Init(ref instance<#=n#>, <#=n#>);
+	public Du(T<#=n#> instance<#=n#>) : this(Du.Init(ref instance<#=n#>, <#=n#>)) { }
 <#}#>
 
 <#foreach (var n in range) {#>
 	public static implicit operator <#=duName#>(T<#=n#> value) => new(value);
 <#}#>
 
-	public TResult Visit<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult>
-		=> Visit<TVisitor, TResult>(ref visitor);
+	public TResult Accept<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult>
+		=> Accept<TVisitor, TResult>(ref visitor);
 
-	public TResult Visit<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult>
+	public TResult Accept<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult>
 	{
 		switch (GetIndexUnsafe())
 		{
@@ -59,6 +61,23 @@ public readonly struct <#=duName#>
 <#}#>
 			default: throw new InvalidInstanceException();
 		}
+	}
+
+	public static Boolean TryCreate<T>(T value, out <#=duName#> du)
+	{
+<#foreach (var n in range) {#>
+		if (value is T<#=n#> v<#=n#>) { du = v<#=n#>; return true; }
+<#}#>
+		du = default;
+		return false;
+	}
+
+	public static Boolean AcceptTypes<TTypeVisitor, TRefParam>(ref TTypeVisitor visitor, ref TRefParam refArg) where TTypeVisitor : ITypeVisitor<<#=duName#>, TRefParam> where TRefParam : allows ref struct
+	{
+<#foreach (var n in range) {#>
+		if (visitor.VisitType<T<#=n#>>(ref refArg, static x => new(x))) return true;
+<#}#>
+		return false;
 	}
 
 	public TResult Match<TResult>(<#=matchParams#>)
@@ -89,18 +108,9 @@ public readonly struct <#=duName#>
 <#}#>
 	];
 
-	static <#=duName#> IDu<<#=duName#>>.Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions options)
-	{
-<#foreach (var n in range) {#>
-		if (JsonSerializer.TryDeserialize<T<#=n#>>(ref reader, options, out var v<#=n#>) && v<#=n#> is not null)
-			return v<#=n#>;
-<#}#>
-		throw new JsonException("No match was found for converting the JSON into a " + typeof(<#=duName#>).NameWithGenericArguments);
-	}
+	public override String ToString() => Accept<ToStringVisitor, String>(default);
 
-	public override String ToString() => Visit<ToStringVisitor, String>(default);
-
-	public override Int32 GetHashCode() => Visit<GetHashCodeVisitor, Int32>(default);
+	public override Int32 GetHashCode() => Accept<GetHashCodeVisitor, Int32>(default);
 
 	public override Boolean Equals([NotNullWhen(true)] Object? obj) => obj switch
 	{
@@ -108,11 +118,11 @@ public readonly struct <#=duName#>
 <#foreach (var n in range) {#>
 		T<#=n#> t when GetIndex() == <#=n#> => Get<T<#=n#>>().Equals(t),
 <#}#>
-		IDu du => Visit<DuEqualityVisitor<IDu>, Boolean>(new(du)),
+		IDu du => Accept<DuEqualityVisitor<IDu>, Boolean>(new(du)),
 		_ => false
 	};
 
-	public Boolean Equals(<#=duName#> other) => Visit<DuEqualityVisitor<<#=duName#>>, Boolean>(new(other));
+	public Boolean Equals(<#=duName#> other) => Accept<DuEqualityVisitor<<#=duName#>>, Boolean>(new(other));
 
 	public static Boolean operator ==(<#=duName#> left, <#=duName#> right) => left.Equals(right);
 	public static Boolean operator !=(<#=duName#> left, <#=duName#> right) => !(left == right);

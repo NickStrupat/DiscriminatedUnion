@@ -7,7 +7,7 @@ internal readonly struct DuEqualityVisitor<TDu>(TDu other) : IVisitor<Boolean> w
 	Boolean IVisitor<Boolean>.Visit<T>(T value)
 	{
 		DuEqualityVisitorInternal<T> visitor = new(value);
-		return other.Visit<DuEqualityVisitorInternal<T>, Boolean>(ref visitor);
+		return other.Accept<DuEqualityVisitorInternal<T>, Boolean>(ref visitor);
 	}
 
 	private readonly struct DuEqualityVisitorInternal<T>(T value) : IVisitor<Boolean> where T : notnull

@@ -79,7 +79,7 @@ internal static class Du
 			get
 			{
 				var visitor = new Visitor();
-				return du.Visit<Visitor, Object>(ref visitor);
+				return du.Accept<Visitor, Object>(ref visitor);
 			}
 		}
 
