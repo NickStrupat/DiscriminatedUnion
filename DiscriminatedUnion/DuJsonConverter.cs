@@ -26,9 +26,11 @@ internal sealed class DuJsonConverter : JsonConverterFactory
         public override T Read(ref Utf8JsonReader reader, Type _, JsonSerializerOptions options)
         {
             var visitor = new JsonDeserializerVisitor<T>(options);
-            if (!T.AcceptTypes(ref visitor, ref reader))
-                throw new JsonException("No match was found for converting the JSON into a " + typeof(T).NameWithGenericArguments);
-            return visitor.Du;
+            T.AcceptTypes(ref visitor, ref reader);
+            return visitor.Du.Match(
+                du => du,
+                _ => throw new JsonException("No match was found for converting the JSON into a " + typeof(T).NameWithGenericArguments)
+            );
         }
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)

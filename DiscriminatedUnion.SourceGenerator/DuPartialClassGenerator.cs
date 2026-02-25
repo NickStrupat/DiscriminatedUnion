@@ -91,11 +91,12 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 		var funcArgs = String.Join(", ", du2g.TypeNames.Select((_, i) => $"f{i + 1}"));
 		var actionParams = String.Join(", ", du2g.TypeNames.Select((tn, i) => $"Action<{tn}> a{i + 1}"));
 		var actionArgs = String.Join(", ", du2g.TypeNames.Select((_, i) => $"a{i + 1}"));
+		var visitTypes = String.Join("\n\t\t", du2g.TypeNames.Select(tn => $"if (visitor.VisitType<{tn}>(ref refParam)) return;"));
 
 		var classBody =
 			$$"""
 			[JsonConverter(typeof(Converter))]
-			sealed partial class {{du2g.Name}} : IDu, IEquatable<{{du2g.Name}}> {
+			sealed partial class {{du2g.Name}} : IDu<{{du2g.Name}}>, IEquatable<{{du2g.Name}}> {
 				private readonly Du<{{typeNames}}> du;
 				private {{du2g.Name}}(Du<{{typeNames}}> du) => this.du = du;
 
@@ -103,14 +104,32 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 
 				{{convOps}}
 
-				public TResult Accept<TVisitor, TResult>(TVisitor visitor)where TVisitor : IVisitor<TResult> => Accept<TVisitor, TResult>(ref visitor);
+				public static void AcceptTypes<TTypeVisitor, TRefParam>(ref TTypeVisitor visitor, ref TRefParam refParam)
+				where TTypeVisitor : ITypeVisitor<TRefParam>
+				where TRefParam : allows ref struct
+				{
+					{{visitTypes}}
+				}
+
+				public static Boolean TryCreate<T>(T value, out {{du2g.Name}} du)
+				{
+					if (Du<{{typeNames}}>.TryCreate(value, out var du2))
+					{
+						du = new(du2);
+						return true;
+					}
+					du = default!;
+					return false;
+				}
+
+				public TResult Accept<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult> => Accept<TVisitor, TResult>(ref visitor);
 				public TResult Accept<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult> => du.Accept<TVisitor, TResult>(ref visitor);
 
 				public TResult Match<TResult>({{funcParams}}) => du.Match({{funcArgs}});
 				public void Switch({{actionParams}}) => du.Switch({{actionArgs}});
 
 				public static ImmutableArray<Type> Types => Du<{{typeNames}}>.Types;
-				
+
 				public override Int32 GetHashCode() => du.GetHashCode();
 				public override Boolean Equals(Object? obj) => du.Equals(obj);
 				public Boolean Equals({{du2g.Name}}? other) => other is not null && du.Equals(other.du);

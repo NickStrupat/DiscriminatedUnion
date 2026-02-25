@@ -1,6 +1,6 @@
 namespace NickStrupat;
 
-public interface ITypeVisitor<in TDu, TRefParam> where TDu : IDu<TDu> where TRefParam : allows ref struct
+public interface ITypeVisitor<TRefParam> where TRefParam : allows ref struct
 {
-	Boolean VisitType<T>(ref TRefParam refArg, Func<T, TDu> duFunc) where T : notnull;
+	Boolean VisitType<T>(ref TRefParam refParam) where T : notnull;
 }

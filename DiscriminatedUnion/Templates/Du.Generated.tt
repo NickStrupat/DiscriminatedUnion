@@ -72,12 +72,11 @@ public readonly struct <#=duName#>
 		return false;
 	}
 
-	public static Boolean AcceptTypes<TTypeVisitor, TRefParam>(ref TTypeVisitor visitor, ref TRefParam refArg) where TTypeVisitor : ITypeVisitor<<#=duName#>, TRefParam> where TRefParam : allows ref struct
+	public static void AcceptTypes<TTypeVisitor, TRefParam>(ref TTypeVisitor visitor, ref TRefParam refParam) where TTypeVisitor : ITypeVisitor<TRefParam> where TRefParam : allows ref struct
 	{
 <#foreach (var n in range) {#>
-		if (visitor.VisitType<T<#=n#>>(ref refArg, static x => new(x))) return true;
+		if (visitor.VisitType<T<#=n#>>(ref refParam)) return;
 <#}#>
-		return false;
 	}
 
 	public TResult Match<TResult>(<#=matchParams#>)
