@@ -91,7 +91,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 		var funcArgs = String.Join(", ", du2g.TypeNames.Select((_, i) => $"f{i + 1}"));
 		var actionParams = String.Join(", ", du2g.TypeNames.Select((tn, i) => $"Action<{tn}> a{i + 1}"));
 		var actionArgs = String.Join(", ", du2g.TypeNames.Select((_, i) => $"a{i + 1}"));
-		var visitTypes = String.Join("\n\t\t", du2g.TypeNames.Select(tn => $"if (visitor.VisitType<{tn}>(ref refParam)) return;"));
+		var acceptTypesBody = String.Join("\n\t\t", du2g.TypeNames.Select(tn => $"if (visitor.VisitType<{tn}>(ref refParam)) return;"));
 
 		var classBody =
 			$$"""
@@ -108,14 +108,14 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				where TTypeVisitor : ITypeVisitor<TRefParam>
 				where TRefParam : allows ref struct
 				{
-					{{visitTypes}}
+					{{acceptTypesBody}}
 				}
 
 				public static Boolean TryCreate<T>(T value, out {{du2g.Name}} du)
 				{
-					if (Du<{{typeNames}}>.TryCreate(value, out var du2))
+					if (Du<{{typeNames}}>.TryCreate(value, out var innerDu))
 					{
-						du = new(du2);
+						du = new(innerDu);
 						return true;
 					}
 					du = default!;
