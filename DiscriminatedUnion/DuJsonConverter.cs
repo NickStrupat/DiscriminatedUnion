@@ -10,16 +10,9 @@ internal sealed class DuJsonConverter : JsonConverterFactory
 
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
     {
-        return cache.GetOrAdd(typeToConvert, Create);
-
-        static JsonConverter Create(Type duType)
-        {
-            var converterType = typeof(Converter<>).MakeGenericType(duType);
-            return (JsonConverter)Activator.CreateInstance(converterType)!;
-        }
+        var converterType = typeof(Converter<>).MakeGenericType(typeToConvert);
+        return (JsonConverter)Activator.CreateInstance(converterType)!;
     }
-
-    private static readonly ConcurrentDictionary<Type, JsonConverter> cache = new();
 
     private sealed class Converter<T> : JsonConverter<T> where T : struct, IDu<T>
     {
