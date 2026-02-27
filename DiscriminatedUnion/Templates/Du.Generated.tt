@@ -19,9 +19,6 @@ for (var i = 1; i != MaxDuTypes; i++)
 	var cons = String.Join("\n\t", from n in range select $"where T{n} : notnull");
 	var matchParams = String.Join(", ", from n in range select $"Func<T{n}, TResult> f{n}");
 	var switchParams = String.Join(", ", from n in range select $"Action<T{n}> a{n}");
-	var toStringArgs = String.Join(", ", from n in range select "Du.ToStr");
-	var getHashCodeArgs = String.Join(", ", from n in range select "Du.GetHc");
-	var commas = new String(',', i);
 #>
 
 [JsonConverter(typeof(DuJsonConverter))]
