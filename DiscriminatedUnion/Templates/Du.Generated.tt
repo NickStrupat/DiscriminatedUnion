@@ -71,6 +71,7 @@ public readonly struct <#=duName#>
 
 	public static void AcceptTypes<TTypeVisitor, TRefParam>(ref TTypeVisitor visitor, ref TRefParam refParam) where TTypeVisitor : ITypeVisitor<TRefParam> where TRefParam : allows ref struct
 	{
+		visitor.Initialize(<#=i + 1#>);
 <#foreach (var n in range) {#>
 		if (visitor.VisitType<T<#=n#>>(ref refParam)) return;
 <#}#>

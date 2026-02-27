@@ -108,6 +108,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				where TTypeVisitor : ITypeVisitor<TRefParam>
 				where TRefParam : allows ref struct
 				{
+					visitor.Initialize({{du2g.TypeNames.Count}});
 					{{acceptTypesBody}}
 				}
 
