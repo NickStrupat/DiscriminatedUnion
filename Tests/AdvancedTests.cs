@@ -422,27 +422,19 @@ public partial class AdvancedTests
 	public void TestSwitch_WithThreeTypes_CorrectCaller()
 	{
 		var callers = new List<String>();
+		void A1(Int32 _) => callers.Add("int");
+		void A2(String _) => callers.Add("string");
+		void A3(Double _) => callers.Add("double");
 
 		Du<Int32, String, Double> du1 = 42;
-		du1.Switch(
-			_ => callers.Add("int"),
-			_ => callers.Add("string"),
-			_ => callers.Add("double")
-		);
+
+		du1.Switch(A1, A2, A3);
 
 		Du<Int32, String, Double> du2 = "test";
-		du2.Switch(
-			_ => callers.Add("int"),
-			_ => callers.Add("string"),
-			_ => callers.Add("double")
-		);
+		du2.Switch(A1, A2, A3);
 
 		Du<Int32, String, Double> du3 = 3.14;
-		du3.Switch(
-			_ => callers.Add("int"),
-			_ => callers.Add("string"),
-			_ => callers.Add("double")
-		);
+		du3.Switch(A1, A2, A3);
 
 		callers.Should().Equal("int", "string", "double");
 	}
