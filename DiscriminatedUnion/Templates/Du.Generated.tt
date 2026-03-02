@@ -16,7 +16,7 @@ for (var i = 1; i != MaxDuTypes; i++)
 	var range = Enumerable.Range(1, i + 1).ToArray();
 	var gps = String.Join(", ", from n in range select $"T{n}");
 	var duName = $"Du<{gps}>";
-	var cons = String.Join("\n\t", from n in range select $"where T{n} : notnull");
+	var constraints = String.Join("\n\t", from n in range select $"where T{n} : notnull");
 	var matchParams = String.Join(", ", from n in range select $"Func<T{n}, TResult> f{n}");
 	var switchParams = String.Join(", ", from n in range select $"Action<T{n}> a{n}");
 #>
@@ -26,7 +26,7 @@ for (var i = 1; i != MaxDuTypes; i++)
 public readonly struct <#=duName#>
 	: IEquatable<<#=duName#>>
 	, IDu<<#=duName#>>
-	<#=cons#>
+	<#=constraints#>
 {
 	internal readonly UnmanagedStorage unmanaged;
 	internal readonly Object? managed;
@@ -71,7 +71,7 @@ public readonly struct <#=duName#>
 
 	public static void AcceptTypes<TTypeVisitor, TRefParam>(ref TTypeVisitor visitor, ref TRefParam refParam) where TTypeVisitor : ITypeVisitor<TRefParam> where TRefParam : allows ref struct
 	{
-		visitor.Initialize(<#=i + 1#>);
+		visitor.Initialize<<#=duName#>>();
 <#foreach (var n in range) {#>
 		if (visitor.VisitType<T<#=n#>>(ref refParam)) return;
 <#}#>
