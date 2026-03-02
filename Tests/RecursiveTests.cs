@@ -34,8 +34,7 @@ public partial class RecursiveTests
 		Assert.True(values[3].TryPick<None>(out var @null));
 	}
 
-	[Du<JsonObject, JsonValue[], String, Int64, Double, Boolean, None>]
-	partial class JsonValue;
+	partial class JsonValue : DuBase<JsonObject, JsonValue[], String, Int64, Double, Boolean, None>;
 
 	sealed class JsonObject : Dictionary<String, JsonValue>;
 
@@ -53,9 +52,7 @@ public partial class RecursiveTests
 		_ = JsonSerializer.Deserialize<Nullable>(json);
 	}
 
-	[Du<String, None>]
-	partial class Nullable;
+	partial class Nullable : DuBase<String, None>;
 
-	[Du<String, Guid>]
-	partial class NonNullable;
+	partial class NonNullable : DuBase<String, Guid>;
 }

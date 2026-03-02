@@ -12,7 +12,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 	{
 		var enumsToGenerate = context.SyntaxProvider
 			.CreateSyntaxProvider(
-				predicate: static (s, _) => s is ClassDeclarationSyntax { AttributeLists.Count: > 0 },
+				predicate: static (s, _) => s is ClassDeclarationSyntax { BaseList.Types.Count: > 0 },
 				transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx)
 			)
 			.Where(static m => m is not null);
@@ -25,20 +25,20 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 	{
 		var classDeclarationSyntax = (ClassDeclarationSyntax)ctx.Node;
 
-		foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
-		foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+		foreach (var baseTypeSyntax in classDeclarationSyntax.BaseList?.Types ?? [])
 		{
-			if (ctx.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol is not IMethodSymbol attributeSymbol)
-				continue; // weird, we couldn't get the symbol, ignore it
+			if (ctx.SemanticModel.GetSymbolInfo(baseTypeSyntax.Type).Symbol is not INamedTypeSymbol symbol)
+				continue;
 
-			if (attributeSymbol.ContainingType.ToDisplayString().StartsWith("NickStrupat.DuAttribute<"))
-				return GetDuToGenerate(ctx.SemanticModel, classDeclarationSyntax, attributeSymbol.ContainingType);
+			if (symbol.ToDisplayString().StartsWith("NickStrupat.DuBase<"))
+				return GetDuToGenerate(ctx.SemanticModel, classDeclarationSyntax, symbol);
 		}
 
 		return null;
 	}
 
-	static DuToGenerate? GetDuToGenerate(SemanticModel semanticModel,
+	static DuToGenerate? GetDuToGenerate(
+		SemanticModel semanticModel,
 		SyntaxNode classDeclarationSyntax,
 		INamedTypeSymbol attributeType)
 	{
@@ -84,22 +84,17 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 		var typeNames = String.Join(", ", du2g.TypeNames);
 		var ctors = String.Join("\n\t",
 			du2g.TypeNames.Select((tn, i) =>
-				$"public {du2g.Name}({tn} instance{i + 1}) => du = new(instance{i + 1});"));
+				$"public {du2g.Name}({tn} instance{i + 1}) : base(instance{i + 1}) {{}}"));
 		var convOps = String.Join("\n\t",
 			du2g.TypeNames.Select(tn => $"public static implicit operator {du2g.Name}({tn} value) => new(value);"));
-		var funcParams = String.Join(", ", du2g.TypeNames.Select((tn, i) => $"Func<{tn}, TResult> f{i + 1}"));
-		var funcArgs = String.Join(", ", du2g.TypeNames.Select((_, i) => $"f{i + 1}"));
-		var actionParams = String.Join(", ", du2g.TypeNames.Select((tn, i) => $"Action<{tn}> a{i + 1}"));
-		var actionArgs = String.Join(", ", du2g.TypeNames.Select((_, i) => $"a{i + 1}"));
 		var acceptTypesBody = String.Join("\n\t\t", du2g.TypeNames.Select(tn => $"if (visitor.VisitType<{tn}>(ref refParam)) return;"));
 
 		var classBody =
 			$$"""
 			[JsonConverter(typeof(Converter))]
-			sealed partial class {{du2g.Name}} : IDu<{{du2g.Name}}>, IEquatable<{{du2g.Name}}> {
-				private readonly Du<{{typeNames}}> du;
-				private {{du2g.Name}}(Du<{{typeNames}}> du) => this.du = du;
-
+			sealed partial class {{du2g.Name}} : IDu<{{du2g.Name}}>, IEquatable<{{du2g.Name}}>
+			{
+				private {{du2g.Name}}(Du<{{typeNames}}> du) : base(du) {}
 				{{ctors}}
 
 				{{convOps}}
@@ -108,7 +103,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				where TTypeVisitor : ITypeVisitor<TRefParam>
 				where TRefParam : allows ref struct
 				{
-					visitor.Initialize({{du2g.TypeNames.Count}});
+					visitor.Initialize<{{du2g.Name}}>();
 					{{acceptTypesBody}}
 				}
 
@@ -123,17 +118,12 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 					return false;
 				}
 
-				public TResult Accept<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult> => Accept<TVisitor, TResult>(ref visitor);
-				public TResult Accept<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult> => du.Accept<TVisitor, TResult>(ref visitor);
+				public override Int32 GetHashCode() => Du.GetHashCode();
+				public override Boolean Equals(Object? obj) => Du.Equals(obj);
+				public Boolean Equals({{du2g.Name}}? other) => other is not null && Du.Equals(other.Du);
 
-				public TResult Match<TResult>({{funcParams}}) => du.Match({{funcArgs}});
-				public void Switch({{actionParams}}) => du.Switch({{actionArgs}});
-
-				public static ImmutableArray<Type> Types => Du<{{typeNames}}>.Types;
-
-				public override Int32 GetHashCode() => du.GetHashCode();
-				public override Boolean Equals(Object? obj) => du.Equals(obj);
-				public Boolean Equals({{du2g.Name}}? other) => other is not null && du.Equals(other.du);
+				public static Boolean operator ==({{du2g.Name}} left, {{du2g.Name}} right) => left.Equals(right);
+				public static Boolean operator !=({{du2g.Name}} left, {{du2g.Name}} right) => !(left == right);
 
 				private sealed class Converter : JsonConverter<{{du2g.Name}}> {
 					public override Boolean HandleNull => true;
@@ -142,7 +132,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 						new(JsonSerializer.Deserialize<Du<{{typeNames}}>>(ref reader, options));
 
 					public override void Write(Utf8JsonWriter writer, {{du2g.Name}} value, JsonSerializerOptions options) =>
-						JsonSerializer.Serialize(writer, value.du, options);
+						JsonSerializer.Serialize(writer, value.Du, options);
 				}
 			}
 			""";

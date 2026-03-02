@@ -43,8 +43,8 @@ public partial class AdvancedTests
 		du1.Should().Be(du2);
 	}
 
-	[Du<Int32, Foo>] partial class Du1;
-	[Du<Bar, Int32>] partial class Du2;
+	partial class Du1 : DuBase<Int32, Foo>;
+	partial class Du2 : DuBase<Bar, Int32>;
 
 	[Fact]
 	public void TestEquality_SameInt32Value()

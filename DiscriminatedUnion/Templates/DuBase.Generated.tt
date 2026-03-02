@@ -1,0 +1,42 @@
+<#@ template language="C#" #>
+<#@ import namespace="System.Linq" #>
+<#@ include file="Shared.ttinclude" #>
+using System.Collections.Immutable;
+
+#nullable enable
+
+namespace NickStrupat;
+<#
+for (var i = 1; i != MaxDuTypes; i++)
+{
+	var range = Enumerable.Range(1, i + 1).ToArray();
+	var gps = String.Join(", ", from n in range select $"T{n}");
+	var constraints = String.Join("\n", from n in range select $"where T{n} : notnull");
+	var matchParams = String.Join(", ", from n in range select $"Func<T{n}, TResult> f{n}");
+	var matchArgs = String.Join(", ", from n in range select $"f{n}");
+	var switchParams = String.Join(", ", from n in range select $"Action<T{n}> a{n}");
+	var switchArgs = String.Join(", ", from n in range select $"a{n}");
+#>
+
+public abstract class DuBase<<#=gps#>> : IDu, IEquatable<DuBase<<#=gps#>>>
+<#=constraints#>
+{
+	protected readonly Du<<#=gps#>> Du;
+	protected DuBase(Du<<#=gps#>> du) => this.Du = du;
+
+	public TResult Accept<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult> => Accept<TVisitor, TResult>(ref visitor);
+	public TResult Accept<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult> => Du.Accept<TVisitor, TResult>(ref visitor);
+
+	public TResult Match<TResult>(<#=matchParams#>) => Du.Match(<#=matchArgs#>);
+	public void Switch(<#=switchParams#>) => Du.Switch(<#=switchArgs#>);
+
+	public static ImmutableArray<Type> Types => Du<int, string>.Types;
+
+	public override String ToString() => Du.ToString();
+	public override Int32 GetHashCode() => Du.GetHashCode();
+	public override Boolean Equals(Object? obj) => Du.Equals(obj);
+	public Boolean Equals(DuBase<<#=gps#>>? other) => other is not null && Du.Equals(other.Du);
+}
+<#
+}
+#>

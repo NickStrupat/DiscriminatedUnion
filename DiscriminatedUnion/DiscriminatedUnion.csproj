@@ -29,9 +29,9 @@
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>Du.Generated.cs</LastGenOutput>
       </None>
-      <None Update="Templates\DuAttribute.Generated.tt">
+      <None Update="Templates\DuBase.Generated.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
-        <LastGenOutput>DuAttribute.Generated.cs</LastGenOutput>
+        <LastGenOutput>DuBase.Generated.cs</LastGenOutput>
       </None>
     </ItemGroup>
     <ItemGroup>
@@ -40,10 +40,10 @@
         <DesignTime>True</DesignTime>
         <DependentUpon>Du.Generated.tt</DependentUpon>
       </Compile>
-      <Compile Update="Templates\DuAttribute.Generated.cs">
+      <Compile Update="Templates\DuBase.Generated.cs">
         <AutoGen>True</AutoGen>
         <DesignTime>True</DesignTime>
-        <DependentUpon>DuAttribute.Generated.tt</DependentUpon>
+        <DependentUpon>DuBase.Generated.tt</DependentUpon>
       </Compile>
     </ItemGroup>
 

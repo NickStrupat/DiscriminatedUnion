@@ -1,10 +1,8 @@
 using NickStrupat;
 
-[Du<Int32, String>]
-partial class DuGlobalNamespace;
+partial class DuGlobalNamespace : DuBase<Int32, String>;
 
 namespace Foo.Bar
 {
-	[Du<Int32, String>]
-	partial class DuNestedNamespaces;
+	partial class DuNestedNamespaces : DuBase<Int32, String>;
 }
