@@ -5,7 +5,7 @@ namespace NickStrupat;
 internal struct JsonDeserializerVisitor<TDu>(JsonSerializerOptions options) : ITypeVisitor<Utf8JsonReader>
 where TDu : IDu<TDu>
 {
-	public Du<TDu, None> Du { get; private set; } = new None();
+	public Maybe<TDu> Du { get; private set; }
 
 	public Boolean VisitType<T>(ref Utf8JsonReader reader) where T : notnull
 	{
