@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace NickStrupat;
 
 [JsonConverter(typeof(JsonConverter))]
-public struct None : IEquatable<None>
+public readonly struct None : IEquatable<None>
 {
 	private sealed class JsonConverter : JsonConverter<None>
 	{
