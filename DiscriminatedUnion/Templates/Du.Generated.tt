@@ -61,21 +61,21 @@ public readonly struct <#=duName#>
 		}
 	}
 
-	public static Boolean TryCreate<T>(T value, out <#=duName#> du)
-	{
-<#foreach (var n in range) {#>
-		if (value is T<#=n#> v<#=n#>) { du = v<#=n#>; return true; }
-<#}#>
-		du = default;
-		return false;
-	}
-
 	public static void AcceptTypes<TTypeVisitor, TRefParam>(ref TTypeVisitor visitor, ref TRefParam refParam) where TTypeVisitor : ITypeVisitor<TRefParam> where TRefParam : allows ref struct
 	{
 		visitor.Initialize<<#=duName#>>();
 <#foreach (var n in range) {#>
 		if (visitor.VisitType<T<#=n#>>(ref refParam)) return;
 <#}#>
+	}
+
+	public static Boolean TryCreate<T>(T value, out <#=duName#> du)
+	{
+<#foreach (var n in range) {#>
+		if (typeof(T) == typeof(T<#=n#>)) { du = Unsafe.As<T, T<#=n#>>(ref value); return true; }
+<#}#>
+		du = default;
+		return false;
 	}
 
 	public Boolean TryPick<T>([NotNullWhen(true)] out T? matched) where T : notnull
