@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Runtime.CompilerServices;
 
 #nullable enable
 
@@ -75,6 +76,14 @@ public readonly struct <#=duName#>
 <#foreach (var n in range) {#>
 		if (visitor.VisitType<T<#=n#>>(ref refParam)) return;
 <#}#>
+	}
+
+	public Boolean TryPick<T>([NotNullWhen(true)] out T? matched) where T : notnull
+	{
+		var visitor = new TryPickVisitor<T>();
+		var result = this.Accept<TryPickVisitor<T>, Boolean>(ref visitor);
+		matched = visitor.Picked!;
+		return result;
 	}
 
 	public TResult Match<TResult>(<#=matchParams#>)

@@ -2,6 +2,7 @@
 <#@ import namespace="System.Linq" #>
 <#@ include file="Shared.ttinclude" #>
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 
@@ -26,6 +27,8 @@ public abstract class DuBase<<#=gps#>> : IDu, IEquatable<DuBase<<#=gps#>>>
 
 	public TResult Accept<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult> => Accept<TVisitor, TResult>(ref visitor);
 	public TResult Accept<TVisitor, TResult>(ref TVisitor visitor) where TVisitor : IVisitor<TResult> => Du.Accept<TVisitor, TResult>(ref visitor);
+
+	public Boolean TryPick<T>([NotNullWhen(true)] out T? matched) where T : notnull => Du.TryPick<T>(out matched);
 
 	public TResult Match<TResult>(<#=matchParams#>) => Du.Match(<#=matchArgs#>);
 	public void Switch(<#=switchParams#>) => Du.Switch(<#=switchArgs#>);

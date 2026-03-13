@@ -32,31 +32,5 @@ public static class DuExtensions
 
 		public Boolean Equals<T>(T other) where T : notnull =>
 			du.TryPick(out T? matched) && EqualityComparer<T>.Default.Equals(matched, other);
-
-		public Boolean TryPick<T>([NotNullWhen(true)] out T? matched) where T : notnull
-		{
-			var visitor = new TryPickVisitor<T>();
-			var result = du.Accept<TryPickVisitor<T>, Boolean>(ref visitor);
-			matched = visitor.Picked!;
-			return result;
-		}
-	}
-
-	extension(IDu du)
-	{
-		public Boolean TryPick<T>([NotNullWhen(true)] out T? matched) where T : notnull
-		{
-			var visitor = new TryPickVisitor<T>();
-			var result = du.Accept<TryPickVisitor<T>, Boolean>(ref visitor);
-			matched = visitor.Picked!;
-			return result;
-		}
-
-		public T Pick<T>() where T : notnull
-		{
-			if (du.TryPick<IDu, T>(out var matched))
-				return matched;
-			throw new InvalidOperationException($"The discriminated union does not hold an instance of type {typeof(T).FullName}.");
-		}
 	}
 }
