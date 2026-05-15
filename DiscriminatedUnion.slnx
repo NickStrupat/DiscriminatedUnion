@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="DiscriminatedUnion.SourceGenerator/DiscriminatedUnion.SourceGenerator.csproj" />
+  <Project Path="DiscriminatedUnion/DiscriminatedUnion.csproj" />
+  <Project Path="SourceGenerators.Tests/SourceGenerators.Tests.csproj" />
+  <Project Path="Testing/Testing.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>
