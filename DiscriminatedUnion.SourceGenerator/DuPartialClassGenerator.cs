@@ -87,7 +87,8 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				$"public {du2g.Name}({tn} instance{i + 1}) : base(instance{i + 1}) {{}}"));
 		var convOps = String.Join("\n\t",
 			du2g.TypeNames.Select(tn => $"public static implicit operator {du2g.Name}({tn} value) => new(value);"));
-		var acceptTypesBody = String.Join("\n\t\t", du2g.TypeNames.Select(tn => $"if (visitor.VisitType<{tn}>(ref refParam)) return;"));
+		var acceptTypesBody = String.Join("\n\t\t", du2g.TypeNames.Select(tn => $"if (visitor.VisitType<{tn}>()) return;"));
+		var acceptTypesRefBody = String.Join("\n\t\t", du2g.TypeNames.Select(tn => $"if (visitor.VisitType<{tn}>(ref refParam)) return;"));
 
 		var classBody =
 			$$"""
@@ -99,12 +100,19 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 
 				{{convOps}}
 
+				public static void AcceptTypes<TTypeVisitor>(ref TTypeVisitor visitor)
+				where TTypeVisitor : ITypeVisitor<TRefParam>
+				{
+					visitor.Initialize<{{du2g.Name}}>();
+					{{acceptTypesBody}}
+				}
+
 				public static void AcceptTypes<TTypeVisitor, TRefParam>(ref TTypeVisitor visitor, ref TRefParam refParam)
 				where TTypeVisitor : ITypeVisitor<TRefParam>
 				where TRefParam : allows ref struct
 				{
 					visitor.Initialize<{{du2g.Name}}>();
-					{{acceptTypesBody}}
+					{{acceptTypesRefBody}}
 				}
 
 				public static Boolean TryCreate<T>(T value, out {{du2g.Name}} du)
