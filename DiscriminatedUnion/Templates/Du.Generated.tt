@@ -61,6 +61,20 @@ public readonly struct <#=duName#>
 		}
 	}
 
+	public void Accept<TVisitor>(TVisitor visitor) where TVisitor : IVisitor
+		=> Accept<TVisitor>(ref visitor);
+
+	public void Accept<TVisitor>(ref TVisitor visitor) where TVisitor : IVisitor
+	{
+		switch (GetIndexUnsafe())
+		{
+<#foreach (var n in range) {#>
+			case <#=n#>: visitor.Visit(Get<T<#=n#>>()); return;
+<#}#>
+			default: throw new InvalidInstanceException();
+		}
+	}
+
 	public static void AcceptTypes<TTypeVisitor>(ref TTypeVisitor visitor) where TTypeVisitor : ITypeVisitor
 	{
 		visitor.Initialize<<#=duName#>>();
