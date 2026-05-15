@@ -101,7 +101,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 				{{convOps}}
 
 				public static void AcceptTypes<TTypeVisitor>(ref TTypeVisitor visitor)
-				where TTypeVisitor : ITypeVisitor<TRefParam>
+				where TTypeVisitor : ITypeVisitor
 				{
 					visitor.Initialize<{{du2g.Name}}>();
 					{{acceptTypesBody}}
