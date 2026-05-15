@@ -93,8 +93,12 @@ public readonly struct <#=duName#>
 
 	public static Boolean TryCreate<T>(T value, out <#=duName#> du)
 	{
+		if (value is null) { du = default; return false; }
 <#foreach (var n in range) {#>
 		if (typeof(T) == typeof(T<#=n#>)) { du = Unsafe.As<T, T<#=n#>>(ref value); return true; }
+<#}#>
+<#foreach (var n in range) {#>
+		if (value is T<#=n#> v<#=n#>) { du = new(v<#=n#>); return true; }
 <#}#>
 		du = default;
 		return false;
