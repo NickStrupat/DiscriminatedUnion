@@ -33,7 +33,7 @@ public abstract class DuBase<<#=gps#>> : IDu, IEquatable<DuBase<<#=gps#>>>
 	public TResult Match<TResult>(<#=matchParams#>) => Du.Match(<#=matchArgs#>);
 	public void Switch(<#=switchParams#>) => Du.Switch(<#=switchArgs#>);
 
-	public static ImmutableArray<Type> Types => Du<int, string>.Types;
+	public static ImmutableArray<Type> Types => Du<<#=gps#>>.Types;
 
 	public override String ToString() => Du.ToString();
 	public override Int32 GetHashCode() => Du.GetHashCode();
