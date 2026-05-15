@@ -17,6 +17,7 @@ public static class TypeExtensions
 	internal static TField? GetFieldValue<TField>(this Object obj, String fieldName)
 	{
 		ArgumentNullException.ThrowIfNull(obj);
+		ArgumentNullException.ThrowIfNull(fieldName);
 		var field = obj.GetType().GetField(fieldName, Instance | Public | NonPublic);
 		if (field is null)
 			throw new ArgumentException($"Field '{fieldName}' not found in type '{obj.GetType()}'.");
