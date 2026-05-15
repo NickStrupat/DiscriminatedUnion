@@ -1,6 +1,6 @@
 using static System.Reflection.BindingFlags;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion.Extensions;
 
 public static class TypeExtensions
 {

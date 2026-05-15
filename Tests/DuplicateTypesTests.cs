@@ -1,5 +1,5 @@
+using DiscriminatedUnion;
 using Moq;
-using NickStrupat;
 
 namespace Tests;
 

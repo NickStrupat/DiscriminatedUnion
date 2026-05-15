@@ -1,4 +1,4 @@
-namespace NickStrupat;
+namespace DiscriminatedUnion.Visitors;
 
 internal readonly struct ToStringVisitor : IVisitor<String>
 {

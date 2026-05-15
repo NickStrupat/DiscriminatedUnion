@@ -1,6 +1,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
-using NickStrupat;
+using DiscriminatedUnion;
+using DiscriminatedUnion.Extensions;
 
 namespace Tests;
 

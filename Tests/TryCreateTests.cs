@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-using NickStrupat;
+using DiscriminatedUnion;
 
 namespace Tests;
 

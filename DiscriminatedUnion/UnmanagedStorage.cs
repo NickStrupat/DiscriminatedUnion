@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion;
 
 [StructLayout(LayoutKind.Sequential, Size = Size)]
 internal struct UnmanagedStorage(Byte index)

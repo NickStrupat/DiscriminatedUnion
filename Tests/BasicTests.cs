@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
 using AwesomeAssertions;
 using Castle.Core.Internal;
+using DiscriminatedUnion;
 using Moq;
-using NickStrupat;
 using ObjectLayoutInspector;
 
 [assembly: InternalsVisibleTo(InternalsVisible.ToDynamicProxyGenAssembly2)]

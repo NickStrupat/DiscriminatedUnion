@@ -1,6 +1,7 @@
 using System.Text.Json;
+using DiscriminatedUnion.Visitors;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion.Extensions;
 
 public static class DuExtensions
 {

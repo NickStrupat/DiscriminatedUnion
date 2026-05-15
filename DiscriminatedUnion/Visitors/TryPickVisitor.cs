@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion.Visitors;
 
 internal struct TryPickVisitor<T> : IVisitor<Boolean> where T : notnull
 {

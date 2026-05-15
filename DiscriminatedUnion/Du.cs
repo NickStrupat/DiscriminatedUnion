@@ -1,8 +1,10 @@
 ﻿using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using DiscriminatedUnion.Extensions;
+using DiscriminatedUnion.Visitors;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion;
 
 internal static class Du
 {

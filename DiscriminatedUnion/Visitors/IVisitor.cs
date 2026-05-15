@@ -1,4 +1,4 @@
-namespace NickStrupat;
+namespace DiscriminatedUnion.Visitors;
 
 public interface IVisitor<out TResult>
 {

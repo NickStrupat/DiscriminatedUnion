@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion;
 
 [JsonConverter(typeof(JsonConverter))]
 public readonly struct None : IEquatable<None>

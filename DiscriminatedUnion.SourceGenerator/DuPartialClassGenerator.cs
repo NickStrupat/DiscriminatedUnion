@@ -30,7 +30,7 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 			if (ctx.SemanticModel.GetSymbolInfo(baseTypeSyntax.Type).Symbol is not INamedTypeSymbol symbol)
 				continue;
 
-			if (symbol.ToDisplayString().StartsWith("NickStrupat.DuBase<"))
+			if (symbol.ToDisplayString().StartsWith("DiscriminatedUnion.DuBase<"))
 				return GetDuToGenerate(ctx.SemanticModel, classDeclarationSyntax, symbol);
 		}
 
@@ -155,7 +155,8 @@ public class DuPartialClassGenerator : IIncrementalGenerator
 			using System.Runtime.CompilerServices;
 			using System.Text.Json;
 			using System.Text.Json.Serialization;
-			using NickStrupat;
+			using DiscriminatedUnion;
+			using DiscriminatedUnion.Visitors;
 			
 			#nullable enable
 

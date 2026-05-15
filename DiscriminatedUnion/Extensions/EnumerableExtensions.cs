@@ -1,4 +1,4 @@
-namespace NickStrupat;
+namespace DiscriminatedUnion.Extensions;
 
 public static class EnumerableExtensions
 {

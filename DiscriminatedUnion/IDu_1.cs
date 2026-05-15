@@ -1,7 +1,8 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using DiscriminatedUnion.Visitors;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion;
 
 public interface IDu<TDu> : IDu where TDu : IDu<TDu>
 {

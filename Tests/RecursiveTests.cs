@@ -1,5 +1,5 @@
 using System.Text.Json;
-using NickStrupat;
+using DiscriminatedUnion;
 
 namespace Tests;
 

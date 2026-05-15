@@ -1,7 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DiscriminatedUnion.Extensions;
+using DiscriminatedUnion.Visitors;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion;
 
 internal sealed class DuJsonConverter : JsonConverterFactory
 {

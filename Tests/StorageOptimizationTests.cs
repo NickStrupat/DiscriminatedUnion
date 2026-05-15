@@ -1,5 +1,5 @@
 using System.Runtime.CompilerServices;
-using NickStrupat;
+using DiscriminatedUnion;
 
 namespace Tests;
 

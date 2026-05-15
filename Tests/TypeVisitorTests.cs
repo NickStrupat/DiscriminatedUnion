@@ -1,5 +1,6 @@
 using AwesomeAssertions;
-using NickStrupat;
+using DiscriminatedUnion;
+using DiscriminatedUnion.Visitors;
 
 namespace Tests;
 

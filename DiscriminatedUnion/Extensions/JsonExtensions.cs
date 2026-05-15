@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion.Extensions;
 
 internal static class JsonExtensions
 {

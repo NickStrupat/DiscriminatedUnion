@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion.Visitors;
 
 internal readonly struct ActionVisitor<T>(Action<T> action) : IVisitor
 {

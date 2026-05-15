@@ -1,6 +1,7 @@
 using System.Text.Json;
+using DiscriminatedUnion.Extensions;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion.Visitors;
 
 internal struct JsonDeserializerVisitor<TDu>(JsonSerializerOptions options) : ITypeVisitor<Utf8JsonReader>
 where TDu : IDu<TDu>

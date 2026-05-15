@@ -3,10 +3,11 @@
 <#@ include file="Shared.ttinclude" #>
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using DiscriminatedUnion.Visitors;
 
 #nullable enable
 
-namespace NickStrupat;
+namespace DiscriminatedUnion;
 <#
 for (var i = 1; i != MaxDuTypes; i++)
 {

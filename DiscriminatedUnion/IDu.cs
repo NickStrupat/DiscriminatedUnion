@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using DiscriminatedUnion.Visitors;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion;
 
 public interface IDu
 {

@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion.Visitors;
 
 internal readonly struct DuEqualityVisitor<TDu>(TDu other) : IVisitor<Boolean> where TDu : IDu
 {

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace NickStrupat;
+namespace DiscriminatedUnion.Visitors;
 
 internal readonly struct JsonSerializerVisitor(Utf8JsonWriter writer, JsonSerializerOptions options) : IVisitor
 {

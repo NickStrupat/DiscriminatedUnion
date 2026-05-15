@@ -1,4 +1,4 @@
-namespace NickStrupat;
+namespace DiscriminatedUnion.Visitors;
 
 public interface ITypeVisitor<TRefParam> where TRefParam : allows ref struct
 {
