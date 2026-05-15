@@ -2,11 +2,7 @@ using System.Text.Json;
 
 namespace NickStrupat;
 
-internal readonly struct JsonSerializerVisitor(Utf8JsonWriter writer, JsonSerializerOptions options) : IVisitor<None>
+internal readonly struct JsonSerializerVisitor(Utf8JsonWriter writer, JsonSerializerOptions options) : IVisitor
 {
-	None IVisitor<None>.Visit<T>(T value)
-	{
-		JsonSerializer.Serialize(writer, value, options);
-		return default;
-	}
+	void IVisitor.Visit<T>(T value) => JsonSerializer.Serialize(writer, value, options);
 }
