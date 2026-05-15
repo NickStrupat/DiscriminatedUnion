@@ -94,9 +94,11 @@ public readonly struct <#=duName#>
 	public static Boolean TryCreate<T>(T value, out <#=duName#> du)
 	{
 		if (value is null) { du = default; return false; }
+		// Pass 1: exact static-type match. Required for value-type arms, and ensures an exact arm wins over an assignable one (e.g. string over object).
 <#foreach (var n in range) {#>
 		if (typeof(T) == typeof(T<#=n#>)) { du = Unsafe.As<T, T<#=n#>>(ref value); return true; }
 <#}#>
+		// Pass 2: runtime-assignability fallback for derived/interface types. Leftmost arm wins.
 <#foreach (var n in range) {#>
 		if (value is T<#=n#> v<#=n#>) { du = new(v<#=n#>); return true; }
 <#}#>
