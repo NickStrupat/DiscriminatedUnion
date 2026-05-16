@@ -33,9 +33,9 @@ public readonly struct <#=duName#>
 	internal readonly UnmanagedStorage unmanaged;
 	internal readonly Object? managed;
 
-	private T Get<T>() where T : notnull => Du.Get<T>(managed, in unmanaged);
+	internal T Get<T>() where T : notnull => Du.Get<T>(managed, in unmanaged);
 
-	private Byte GetIndexUnsafe() => Du.GetIndexUnsafe(managed, in unmanaged);
+	internal Byte GetIndexUnsafe() => Du.GetIndexUnsafe(managed, in unmanaged);
 	private Byte GetIndex() => Du.GetIndex(managed, in unmanaged);
 
 	private static <#=duName#> InitUnsafe<T>(ref T instance, Byte index) where T : notnull => new(Du.Init(ref instance, index));

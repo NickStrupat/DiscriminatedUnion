@@ -1,0 +1,59 @@
+<#@ template language="C#" hostspecific="true" #>
+<#@ import namespace="System.Linq" #>
+<#@ include file="..\Templates\Shared.ttinclude" #>
+
+#nullable enable
+
+namespace DiscriminatedUnion.Extensions;
+
+public static class PickExtensions
+{
+	extension<T1>(Du<T1, None> du) where T1 : notnull
+	{
+		public None? Pick(out T1? matched)
+		{
+			switch (du.GetIndexUnsafe())
+			{
+				case 1: matched = du.Get<T1>(); return null;
+				case 2: matched = default; return default(None);
+				default: throw new InvalidInstanceException();
+			}
+		}
+	}
+<#
+for (var i = 1; i != MaxDuTypes; i++)
+{
+	var range = Enumerable.Range(1, i + 1).ToArray();
+	var gps = String.Join(", ", from n in range select $"T{n}");
+	var duName = $"Du<{gps}>";
+	var constraints = String.Join("\n\t\t", from n in range select $"where T{n} : notnull");
+#>
+
+	extension<<#=gps#>>(<#=duName#> du)
+		<#=constraints#>
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		if (remaining.Count < 2) remaining.Add("None");
+		var residualName = $"Du<{String.Join(", ", remaining)}>";
+#>
+		public <#=residualName#>? Pick(out T<#=pickN#>? matched)
+		{
+			switch (du.GetIndexUnsafe())
+			{
+<#		foreach (var n in range) {
+			if (n == pickN) {#>
+				case <#=n#>: matched = du.Get<T<#=n#>>(); return null;
+<#			} else {#>
+				case <#=n#>: matched = default; return du.Get<T<#=n#>>();
+<#			}
+		}#>
+				default: throw new InvalidInstanceException();
+			}
+		}
+
+<#	}#>
+	}
+<#}#>
+}
