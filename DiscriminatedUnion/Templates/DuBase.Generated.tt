@@ -3,6 +3,7 @@
 <#@ include file="Shared.ttinclude" #>
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using DiscriminatedUnion.Extensions;
 using DiscriminatedUnion.Visitors;
 
 #nullable enable
@@ -36,6 +37,28 @@ public abstract class DuBase<<#=gps#>> : IDu, IEquatable<DuBase<<#=gps#>>>
 
 	public TResult Match<TResult>(<#=matchParams#>) => Du.Match(<#=matchArgs#>);
 	public void Switch(<#=switchParams#>) => Du.Switch(<#=switchArgs#>);
+
+<#
+// Forward per-arm When. Arity 2 forwards to extensions (returning Du<T_other, None>).
+foreach (var k in range)
+{
+	var restRange = range.Where(n => n != k).ToArray();
+	var restGps = String.Join(", ", from n in restRange select $"T{n}");
+	if (restRange.Length == 1)
+	{
+		// arity 2: forward to the extension; result type is Du<T_other, None>
+#>
+	public Du<<#=restGps#>, None> When(Action<T<#=k#>> handler) => Du.When(handler);
+<#
+	}
+	else
+	{
+#>
+	public Du<<#=restGps#>> When(Action<T<#=k#>> handler) => Du.When(handler);
+<#
+	}
+}
+#>
 
 	public static ImmutableArray<Type> Types => Du<<#=gps#>>.Types;
 

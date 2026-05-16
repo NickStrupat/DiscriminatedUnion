@@ -39,7 +39,7 @@ public readonly struct <#=duName#>
 	private Byte GetIndex() => Du.GetIndex(managed, in unmanaged);
 
 	private static <#=duName#> InitUnsafe<T>(ref T instance, Byte index) where T : notnull => new(Du.Init(ref instance, index));
-	private Du((Object? managed, UnmanagedStorage unmanaged) x) => (this.managed, this.unmanaged) = (x.managed, x.unmanaged);
+	internal Du((Object? managed, UnmanagedStorage unmanaged) x) => (this.managed, this.unmanaged) = (x.managed, x.unmanaged);
 <#foreach (var n in range) {#>
 	public Du(T<#=n#> instance<#=n#>) : this(Du.Init(ref instance<#=n#>, <#=n#>)) { }
 <#}#>

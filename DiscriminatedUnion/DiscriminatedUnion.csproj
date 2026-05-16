@@ -44,6 +44,10 @@
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>DuBase.Generated.cs</LastGenOutput>
       </None>
+      <None Update="Templates\DuWhenExtensions.Generated.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>DuWhenExtensions.Generated.cs</LastGenOutput>
+      </None>
     </ItemGroup>
     <ItemGroup>
       <Compile Update="Templates\Du.Generated.cs">
@@ -55,6 +59,11 @@
         <AutoGen>True</AutoGen>
         <DesignTime>True</DesignTime>
         <DependentUpon>DuBase.Generated.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Templates\DuWhenExtensions.Generated.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>DuWhenExtensions.Generated.tt</DependentUpon>
       </Compile>
     </ItemGroup>
 

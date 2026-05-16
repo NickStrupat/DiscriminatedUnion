@@ -1,0 +1,63 @@
+<#@ template language="C#" hostspecific="true" #>
+<#@ import namespace="System.Linq" #>
+<#@ include file="Shared.ttinclude" #>
+
+#nullable enable
+
+namespace DiscriminatedUnion.Extensions;
+
+// Per-arm When: peels one arm. Returns Du<rest> for arity >= 3; returns Du<T_other, None> for arity 2
+// (with the more-specific terminal overload at Du<T1, None> in the hand-written DuExtensions class).
+// Throws InvalidInstanceException on default(Du). Once any arm in a chain matches, subsequent peels
+// in the chain detect the consumed sentinel and no-op, so .When().When()... chains never throw mid-way.
+public static class DuWhenExtensions
+{
+<#
+for (var i = 1; i != MaxDuTypes; i++)
+{
+	var range = Enumerable.Range(1, i + 1).ToArray();
+	var gps = String.Join(", ", from n in range select $"T{n}");
+	var constraints = String.Join(" ", from n in range select $"where T{n} : notnull");
+	foreach (var k in range)
+	{
+		var restRange = range.Where(n => n != k).ToArray();
+		var restGps = String.Join(", ", from n in restRange select $"T{n}");
+		string restDuName;
+		string matchedReturn;
+		string skippedReturn;
+		string consumedReturn;
+		if (restRange.Length == 1)
+		{
+			// arity 2: peeling produces Du<T_other, None>; matched-arm case fills arm 2 with default(None) so
+			// TryPick<None> on the result still works. Consumed input propagates as the consumed sentinel.
+			restDuName = $"Du<{restGps}, None>";
+			matchedReturn =
+				"var n = default(None); return new " + restDuName + "(Du.Init(ref n, 2));";
+			// surviving arm always becomes arm 1 of Du<T_other, None>
+			skippedReturn = "return new " + restDuName + "(Du.Reindex(du.managed, in du.unmanaged, 1));";
+			consumedReturn = "return new " + restDuName + "((Du.Indexes[Du.ConsumedIndex], default));";
+		}
+		else
+		{
+			// arity >= 3: peeling produces Du<rest>; matched-arm case returns the consumed sentinel so
+			// further peels in the chain no-op instead of throwing.
+			restDuName = $"Du<{restGps}>";
+			matchedReturn = "return new " + restDuName + "((Du.Indexes[Du.ConsumedIndex], default));";
+			skippedReturn =
+				"var newIndex = idx < " + k + " ? idx : (Byte)(idx - 1); return new " + restDuName + "(Du.Reindex(du.managed, in du.unmanaged, newIndex));";
+			consumedReturn = "return new " + restDuName + "((Du.Indexes[Du.ConsumedIndex], default));";
+		}
+#>
+	public static <#=restDuName#> When<<#=gps#>>(this Du<<#=gps#>> du, Action<T<#=k#>> handler) <#=constraints#>
+	{
+		var idx = Du.GetIndex(du.managed, in du.unmanaged);
+		if (idx == Du.ConsumedIndex) { <#=consumedReturn#> }
+		if (idx == <#=k#>) { handler(Du.Get<T<#=k#>>(du.managed, in du.unmanaged)); <#=matchedReturn#> }
+		<#=skippedReturn#>
+	}
+
+<#
+	}
+}
+#>
+}

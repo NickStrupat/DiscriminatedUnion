@@ -32,6 +32,12 @@ internal static class Du
 			? index
 			: throw new InvalidInstanceException();
 
+	// Re-encodes the storage of an existing arm with a new arm index, used by per-arm Match peeling.
+	public static (Object?, UnmanagedStorage) Reindex(Object? managed, in UnmanagedStorage unmanaged, Byte newIndex) =>
+		managed is Index
+			? (Indexes[newIndex], unmanaged)
+			: (managed, new UnmanagedStorage(newIndex));
+
 	private sealed record Box<T>(T Value) where T : notnull;
 
 	private static UnmanagedStorage AsUnmanaged<T>(ref T source)
@@ -59,6 +65,10 @@ internal static class Du
 			array[i] = new Index((Byte)i);
 		Indexes = ImmutableCollectionsMarshal.AsImmutableArray(array);
 	}
+
+	// Sentinel index used by per-arm When peeling to mark "an earlier arm in the chain already matched".
+	// Subsequent peels detect this and no-op instead of throwing, letting fluent .When().When()... chains complete safely.
+	public const Byte ConsumedIndex = 255;
 
 	public sealed record Index(Byte Value);
 	public static readonly ImmutableArray<Index> Indexes;
