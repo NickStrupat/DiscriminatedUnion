@@ -7,6 +7,7 @@
         <WarningsAsErrors>nullable</WarningsAsErrors>
 
         <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+        <PackageId>NickStrupat.DiscriminatedUnion</PackageId>
         <Version>1.0.0-beta1</Version>
         <Authors>Nick Strupat</Authors>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
