@@ -23,7 +23,7 @@ for (var i = 1; i != MaxDuTypes; i++)
 public abstract class DuBase<<#=gps#>> : IDu, IEquatable<DuBase<<#=gps#>>>
 <#=constraints#>
 {
-	protected readonly Du<<#=gps#>> Du;
+	protected internal readonly Du<<#=gps#>> Du;
 	protected DuBase(Du<<#=gps#>> du) => this.Du = du;
 
 	public TResult Accept<TVisitor, TResult>(TVisitor visitor) where TVisitor : IVisitor<TResult> => Accept<TVisitor, TResult>(ref visitor);

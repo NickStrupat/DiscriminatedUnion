@@ -56,5 +56,11 @@ for (var i = 1; i != MaxDuTypes; i++)
 		public None? Else(Action<Object> handler)
 			=> du is null ? null : du.Value.Else(handler);
 	}
+
+	extension<<#=gps#>>(DuBase<<#=gps#>> du)
+		<#=constraints#>
+	{
+		public None? Else(Action<Object> handler) => du.Du.Else(handler);
+	}
 <#}#>
 }

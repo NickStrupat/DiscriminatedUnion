@@ -124,5 +124,25 @@ for (var i = 1; i != MaxDuTypes; i++)
 		public static None? operator |(<#=duName#>? du, Action handler)
 			=> du is null ? null : du.Value | handler;
 	}
+
+	extension<<#=gps#>>(DuBase<<#=gps#>>)
+		<#=constraints#>
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		if (remaining.Count < 2) remaining.Add("None");
+		var residualName = $"Du<{String.Join(", ", remaining)}>";
+#>
+		public static <#=residualName#>? operator |(DuBase<<#=gps#>> du, Action<T<#=pickN#>> handler)
+			=> du.Du | handler;
+
+<#	}#>
+		public static None? operator |(DuBase<<#=gps#>> du, Action<Else> handler)
+			=> du.Du | handler;
+
+		public static None? operator |(DuBase<<#=gps#>> du, Action handler)
+			=> du.Du | handler;
+	}
 <#}#>
 }

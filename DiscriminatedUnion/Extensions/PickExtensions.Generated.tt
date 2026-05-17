@@ -55,5 +55,18 @@ for (var i = 1; i != MaxDuTypes; i++)
 
 <#	}#>
 	}
+
+	extension<<#=gps#>>(DuBase<<#=gps#>> du)
+		<#=constraints#>
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		if (remaining.Count < 2) remaining.Add("None");
+		var residualName = $"Du<{String.Join(", ", remaining)}>";
+#>
+		public <#=residualName#>? Pick(out T<#=pickN#>? matched) => du.Du.Pick(out matched);
+<#	}#>
+	}
 <#}#>
 }
