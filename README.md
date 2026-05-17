@@ -53,6 +53,10 @@ The source generator emits the constructors, implicit conversions, equality, and
 | --- | --- | --- |
 | `Match(f1, …, fn)` | `TResult` | Yes — wrong arity is a compile error |
 | `Switch(a1, …, an)` | `void` | Yes |
+| `Pick<T>(out T?)` *(ext)* | residual `Du<…rest>?` | Yes — residual shape is checked by the compiler |
+| `When<T>(Action<T>)` *(ext)* | residual `Du<…rest>?` | Yes |
+| `\|` pipe operator | residual `Du<…rest>?` or `None?` | Yes — chain ends when all arms are stripped |
+| `Else(Action<object>)` *(ext)* | `None?` (terminator) | n/a — catch-all |
 | `TryPick<T>(out T?)` | `bool` | No (runtime check per call) |
 | `TryCreate<T>(T value, out Du)` | `bool` | No (runtime check per call) |
 | `Accept<TVisitor, TResult>(ref TVisitor)` | `TResult` | Visitor's `Visit<T>` is generic — for arm-agnostic operations |
@@ -61,6 +65,47 @@ The source generator emits the constructors, implicit conversions, equality, and
 `TryCreate<T>` runs two passes: exact `typeof(T) == typeof(Tn)` first, then `value is Tn` for assignability (so `Du<Animal, int>.TryCreate<Dog>(dog, …)` succeeds with leftmost-arm-wins on ambiguity). Returns false for null.
 
 `default(Du<…>)` throws `InvalidInstanceException` on any operation rather than silently picking arm 0.
+
+## Residual extraction — `Pick`, `When`, `|`, `Else`
+
+`Pick`, `When`, and the `|` operator all strip one arm from a `Du`. The return type is a `Du<…>?` of the remaining arms (with a `None` arm appended once you're down to a single type, so the residual type doesn't degenerate into a bare `T?`). A null residual means the targeted arm matched; a non-null residual carries the value that didn't. Chaining is compile-time exhaustive — once every arm has been stripped, the residual type collapses to `None?`.
+
+```csharp
+using DiscriminatedUnion;
+using DiscriminatedUnion.Extensions;
+
+Du<int, string, double> du = "hit";
+
+// Pick: out-param style
+Du<int, double>? rest = du.Pick(out string? matched);   // matched = "hit", rest = null
+
+// When: invokes handler on match, returns residual
+Du<int, double>? rest2 = du.When(s => Console.WriteLine(s));
+
+// Pipe operator: chain handlers, one per arm
+None? done = du
+    | (int    i) => Console.WriteLine($"int {i}")
+    | (string s) => Console.WriteLine($"str {s}")
+    | (double d) => Console.WriteLine($"dbl {d}");
+```
+
+`Else` and two `|` overloads terminate a chain with a catch-all:
+
+```csharp
+None? done = du
+    | (int i)  => Console.WriteLine($"int {i}")
+    | (Else e) => Console.WriteLine($"other: {e.Value}");   // boxed unhandled value
+
+None? done2 = du
+    | (int i) => Console.WriteLine(i)
+    | ()      => Console.WriteLine("not an int");           // parameterless catch-all
+
+// Or chain Else off a partial residual:
+None? done3 = (du | (int i) => Console.WriteLine(i))
+    .Else(value => Console.WriteLine($"other: {value}"));
+```
+
+All of these are also available on `DuBase<…>` subclasses and on `Du<…>?` (null propagates through the chain). `Du<T, None>` is recognized specially: the `None` arm is silently skipped by `|`/`Else`/parameterless handlers.
 
 ## Storage
 
@@ -133,8 +178,9 @@ Named unions (`DuBase`-derived) get their own generated `JsonConverter`.
 ## Limitations
 
 - Custom `IVisitor<T>` implementations that internally dispatch on `typeof(T)` won't get a compile-time signal when you add a new arm. Use `Match`/`Switch` for per-arm logic; reserve `Accept` for arm-agnostic operations (serialize, hash, ToString).
-- `TryPick<T>` chains and `TryCreate<T>` callers are runtime-checked — adding an arm won't break their call sites either.
-- Up to 16 arms (configurable in the T4 template; raises generated assembly size).
+- `TryPick<T>` chains and `TryCreate<T>` callers are runtime-checked — adding an arm won't break their call sites either. `Pick`/`When`/`|` chains, by contrast, *are* compile-time exhaustive: the residual type changes when you add an arm, breaking stale call sites.
+- `Else` and `|`-with-`Action<Else>` box value-type arms (the boxed value is exposed as `Else.Value`, typed `object`). Per-arm handlers (`Action<T>`) stay allocation-free.
+- Up to 16 arms (configurable via `MaxDuTypes` in `Templates/Shared.ttinclude`; raises generated assembly size).
 
 ## License
 
