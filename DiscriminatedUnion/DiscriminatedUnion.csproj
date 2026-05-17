@@ -52,6 +52,14 @@
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>WhenExtensions.Generated.cs</LastGenOutput>
       </None>
+      <None Update="Extensions\PipeExtensions.Generated.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>PipeExtensions.Generated.cs</LastGenOutput>
+      </None>
+      <None Update="Extensions\ElseExtensions.Generated.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>ElseExtensions.Generated.cs</LastGenOutput>
+      </None>
     </ItemGroup>
     <ItemGroup>
       <Compile Update="Templates\Du.Generated.cs">
@@ -73,6 +81,16 @@
         <AutoGen>True</AutoGen>
         <DesignTime>True</DesignTime>
         <DependentUpon>WhenExtensions.Generated.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Extensions\PipeExtensions.Generated.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>PipeExtensions.Generated.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Extensions\ElseExtensions.Generated.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>ElseExtensions.Generated.tt</DependentUpon>
       </Compile>
     </ItemGroup>
 

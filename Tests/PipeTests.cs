@@ -1,0 +1,148 @@
+using AwesomeAssertions;
+using DiscriminatedUnion;
+using DiscriminatedUnion.Extensions;
+using Moq;
+
+namespace Tests;
+
+public class PipeTests
+{
+	[Fact]
+	public void Pipe_TwoArm_MatchingArm_InvokesHandlerAndReturnsNull()
+	{
+		var handler = new Mock<Action<Int32>>();
+		Du<Int32, String> du = 42;
+
+		Du<String, None>? residual = du | handler.Object;
+
+		residual.Should().BeNull();
+		handler.Verify(h => h(42), Times.Once);
+	}
+
+	[Fact]
+	public void Pipe_TwoArm_NonMatchingArm_DoesNotInvokeHandler_ReturnsResidual()
+	{
+		var handler = new Mock<Action<Int32>>();
+		Du<Int32, String> du = "hello";
+
+		Du<String, None>? residual = du | handler.Object;
+
+		residual.Should().NotBeNull();
+		residual!.Value.TryPick<String>(out var s).Should().BeTrue();
+		s.Should().Be("hello");
+		handler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
+	}
+
+	[Fact]
+	public void Pipe_ThreeArm_PickMiddle_HandlerInvokedOnMatch()
+	{
+		var handler = new Mock<Action<String>>();
+		Du<Int32, String, Double> du = "match";
+
+		Du<Int32, Double>? residual = du | handler.Object;
+
+		residual.Should().BeNull();
+		handler.Verify(h => h("match"), Times.Once);
+	}
+
+	[Fact]
+	public void Pipe_FluentChain_RunsExactlyOneHandlerThenTerminates()
+	{
+		var intHandler = new Mock<Action<Int32>>();
+		var stringHandler = new Mock<Action<String>>();
+		var doubleHandler = new Mock<Action<Double>>();
+
+		Du<Int32, String, Double> du = "hit";
+
+		None? terminator = du | intHandler.Object | stringHandler.Object | doubleHandler.Object;
+
+		terminator.Should().BeNull();
+		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
+		stringHandler.Verify(h => h("hit"), Times.Once);
+		doubleHandler.Verify(h => h(It.IsAny<Double>()), Times.Never);
+	}
+
+	[Fact]
+	public void Pipe_FluentChain_LastArmMatches_OnlyLastHandlerInvoked()
+	{
+		var intHandler = new Mock<Action<Int32>>();
+		var stringHandler = new Mock<Action<String>>();
+		var doubleHandler = new Mock<Action<Double>>();
+
+		Du<Int32, String, Double> du = 3.14;
+
+		None? terminator = du
+		                   | intHandler.Object
+		                   | stringHandler.Object
+		                   | doubleHandler.Object;
+
+		terminator.Should().BeNull();
+		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
+		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
+		doubleHandler.Verify(h => h(3.14), Times.Once);
+	}
+
+	[Fact]
+	public void Pipe_FluentChain_FirstArmMatches_ShortCircuitsRemainingHandlers()
+	{
+		var intHandler = new Mock<Action<Int32>>();
+		var stringHandler = new Mock<Action<String>>();
+		var doubleHandler = new Mock<Action<Double>>();
+
+		Du<Int32, String, Double> du = 42;
+
+		None? terminator = du | intHandler.Object | stringHandler.Object | doubleHandler.Object;
+
+		terminator.Should().BeNull();
+		intHandler.Verify(h => h(42), Times.Once);
+		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
+		doubleHandler.Verify(h => h(It.IsAny<Double>()), Times.Never);
+	}
+
+	[Fact]
+	public void Pipe_DuWithNonePadding_PickingValueArm_TerminatesWithNoneResidual()
+	{
+		var handler = new Mock<Action<Int32>>();
+		Du<Int32, None> du = 42;
+
+		None? residual = du | handler.Object;
+
+		residual.Should().BeNull();
+		handler.Verify(h => h(42), Times.Once);
+	}
+
+	[Fact]
+	public void Pipe_DuWithNonePadding_HoldingNone_DoesNotInvokeHandler_ReturnsNoneSingleton()
+	{
+		var handler = new Mock<Action<String>>();
+		Du<String, None> du = default(None);
+
+		None? residual = du | handler.Object;
+
+		residual.Should().NotBeNull();
+		residual!.Value.Should().Be(default(None));
+		handler.Verify(h => h(It.IsAny<String>()), Times.Never);
+	}
+
+	[Fact]
+	public void Pipe_NullableReceiver_NullPropagates()
+	{
+		var handler = new Mock<Action<String>>();
+		Du<String, None>? source = null;
+
+		None? result = source | handler.Object;
+
+		result.Should().BeNull();
+		handler.Verify(h => h(It.IsAny<String>()), Times.Never);
+	}
+
+	[Fact]
+	public void Pipe_OnDefaultDu_Throws()
+	{
+		Du<Int32, String> du = default;
+
+		Action act = () => { var _ = du | ((Int32 _) => { }); };
+
+		act.Should().Throw<InvalidInstanceException>();
+	}
+}

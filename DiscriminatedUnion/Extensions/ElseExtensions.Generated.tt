@@ -1,0 +1,60 @@
+<#@ template language="C#" hostspecific="true" #>
+<#@ import namespace="System.Linq" #>
+<#@ include file="..\Templates\Shared.ttinclude" #>
+
+#nullable enable
+
+namespace DiscriminatedUnion.Extensions;
+
+public static class ElseExtensions
+{
+	extension<T1>(Du<T1, None> du) where T1 : notnull
+	{
+		public None? Else(Action<Object> handler)
+		{
+			switch (du.GetIndexUnsafe())
+			{
+				case 1: handler(du.Get<T1>()); return null;
+				case 2: handler(du.Get<None>()); return null;
+				default: throw new InvalidInstanceException();
+			}
+		}
+	}
+
+	extension<T1>(Du<T1, None>? du) where T1 : notnull
+	{
+		public None? Else(Action<Object> handler)
+			=> du is null ? null : du.Value.Else(handler);
+	}
+<#
+for (var i = 1; i != MaxDuTypes; i++)
+{
+	var range = Enumerable.Range(1, i + 1).ToArray();
+	var gps = String.Join(", ", from n in range select $"T{n}");
+	var duName = $"Du<{gps}>";
+	var constraints = String.Join("\n\t\t", from n in range select $"where T{n} : notnull");
+#>
+
+	extension<<#=gps#>>(<#=duName#> du)
+		<#=constraints#>
+	{
+		public None? Else(Action<Object> handler)
+		{
+			switch (du.GetIndexUnsafe())
+			{
+<#	foreach (var n in range) {#>
+				case <#=n#>: handler(du.Get<T<#=n#>>()); return null;
+<#	}#>
+				default: throw new InvalidInstanceException();
+			}
+		}
+	}
+
+	extension<<#=gps#>>(<#=duName#>? du)
+		<#=constraints#>
+	{
+		public None? Else(Action<Object> handler)
+			=> du is null ? null : du.Value.Else(handler);
+	}
+<#}#>
+}
