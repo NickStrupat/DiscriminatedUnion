@@ -10,15 +10,7 @@ public static class PipeExtensions
 {
 	extension<T1>(Du<T1, None>) where T1 : notnull
 	{
-		public static None? operator |(Du<T1, None> du, Action<T1> handler)
-		{
-			switch (du.GetIndexUnsafe())
-			{
-				case 1: handler(du.Get<T1>()); return null;
-				case 2: return default(None);
-				default: throw new InvalidInstanceException();
-			}
-		}
+		public static None? operator |(Du<T1, None> du, Action<T1> handler) => du.When(handler);
 
 		public static None? operator |(Du<T1, None> du, Action<Else> handler)
 		{
@@ -70,20 +62,7 @@ for (var i = 1; i != MaxDuTypes; i++)
 		if (remaining.Count < 2) remaining.Add("None");
 		var residualName = $"Du<{String.Join(", ", remaining)}>";
 #>
-		public static <#=residualName#>? operator |(<#=duName#> du, Action<T<#=pickN#>> handler)
-		{
-			switch (du.GetIndexUnsafe())
-			{
-<#		foreach (var n in range) {
-			if (n == pickN) {#>
-				case <#=n#>: handler(du.Get<T<#=n#>>()); return null;
-<#			} else {#>
-				case <#=n#>: return du.Get<T<#=n#>>();
-<#			}
-		}#>
-				default: throw new InvalidInstanceException();
-			}
-		}
+		public static <#=residualName#>? operator |(<#=duName#> du, Action<T<#=pickN#>> handler) => du.When(handler);
 
 <#	}#>
 		public static None? operator |(<#=duName#> du, Action<Else> handler)
