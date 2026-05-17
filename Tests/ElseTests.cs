@@ -98,4 +98,16 @@ public class ElseTests
 
 		act.Should().Throw<InvalidInstanceException>();
 	}
+
+	[Fact]
+	public void Else_DuWithNonePadding_SkipsNoneArm()
+	{
+		var handler = new Mock<Action<Object>>();
+		Du<String, None> du = default(None);
+
+		None? result = du.Else(handler.Object);
+
+		result.Should().BeNull();
+		handler.Verify(h => h(It.IsAny<Object>()), Times.Never);
+	}
 }

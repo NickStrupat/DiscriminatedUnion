@@ -19,11 +19,37 @@ public static class PipeExtensions
 				default: throw new InvalidInstanceException();
 			}
 		}
+
+		public static None? operator |(Du<T1, None> du, Action<Else> handler)
+		{
+			switch (du.GetIndexUnsafe())
+			{
+				case 1: handler(new Else(du.Get<T1>())); return null;
+				case 2: return null;
+				default: throw new InvalidInstanceException();
+			}
+		}
+
+		public static None? operator |(Du<T1, None> du, Action handler)
+		{
+			switch (du.GetIndexUnsafe())
+			{
+				case 1: handler(); return null;
+				case 2: return null;
+				default: throw new InvalidInstanceException();
+			}
+		}
 	}
 
 	extension<T1>(Du<T1, None>?) where T1 : notnull
 	{
 		public static None? operator |(Du<T1, None>? du, Action<T1> handler)
+			=> du is null ? null : du.Value | handler;
+
+		public static None? operator |(Du<T1, None>? du, Action<Else> handler)
+			=> du is null ? null : du.Value | handler;
+
+		public static None? operator |(Du<T1, None>? du, Action handler)
 			=> du is null ? null : du.Value | handler;
 	}
 <#
@@ -60,6 +86,23 @@ for (var i = 1; i != MaxDuTypes; i++)
 		}
 
 <#	}#>
+		public static None? operator |(<#=duName#> du, Action<Else> handler)
+		{
+			switch (du.GetIndexUnsafe())
+			{
+<#	foreach (var n in range) {#>
+				case <#=n#>: handler(new Else(du.Get<T<#=n#>>())); return null;
+<#	}#>
+				default: throw new InvalidInstanceException();
+			}
+		}
+
+		public static None? operator |(<#=duName#> du, Action handler)
+		{
+			if (du.GetIndexUnsafe() == 0) throw new InvalidInstanceException();
+			handler();
+			return null;
+		}
 	}
 
 	extension<<#=gps#>>(<#=duName#>?)
@@ -75,6 +118,11 @@ for (var i = 1; i != MaxDuTypes; i++)
 			=> du is null ? null : du.Value | handler;
 
 <#	}#>
+		public static None? operator |(<#=duName#>? du, Action<Else> handler)
+			=> du is null ? null : du.Value | handler;
+
+		public static None? operator |(<#=duName#>? du, Action handler)
+			=> du is null ? null : du.Value | handler;
 	}
 <#}#>
 }

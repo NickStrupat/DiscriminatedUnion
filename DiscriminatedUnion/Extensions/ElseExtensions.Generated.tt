@@ -15,7 +15,7 @@ public static class ElseExtensions
 			switch (du.GetIndexUnsafe())
 			{
 				case 1: handler(du.Get<T1>()); return null;
-				case 2: handler(du.Get<None>()); return null;
+				case 2: return null;
 				default: throw new InvalidInstanceException();
 			}
 		}

@@ -145,4 +145,112 @@ public class PipeTests
 
 		act.Should().Throw<InvalidInstanceException>();
 	}
+
+	[Fact]
+	public void Pipe_ElseHandler_OnDirectDu_InvokesWithBoxedValue()
+	{
+		var handler = new Mock<Action<Else>>();
+		Du<Int32, String> du = 42;
+
+		None? result = du | handler.Object;
+
+		result.Should().BeNull();
+		handler.Verify(h => h(It.Is<Else>(r => r.Value.Equals(42))), Times.Once);
+	}
+
+	[Fact]
+	public void Pipe_ElseHandler_TerminatesChain_NotInvokedAfterPriorMatch()
+	{
+		var intHandler = new Mock<Action<Int32>>();
+		var restHandler = new Mock<Action<Else>>();
+		Du<Int32, String, Double> du = 42;
+
+		None? terminator = du | intHandler.Object | restHandler.Object;
+
+		terminator.Should().BeNull();
+		intHandler.Verify(h => h(42), Times.Once);
+		restHandler.Verify(h => h(It.IsAny<Else>()), Times.Never);
+	}
+
+	[Fact]
+	public void Pipe_ElseHandler_TerminatesChain_FiresWithBoxedUnhandledValue()
+	{
+		var intHandler = new Mock<Action<Int32>>();
+		var stringHandler = new Mock<Action<String>>();
+		var restHandler = new Mock<Action<Else>>();
+		Du<Int32, String, Double> du = 3.14;
+
+		None? terminator = du | intHandler.Object | stringHandler.Object | restHandler.Object;
+
+		terminator.Should().BeNull();
+		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
+		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
+		restHandler.Verify(h => h(It.Is<Else>(r => r.Value.Equals(3.14))), Times.Once);
+	}
+
+	[Fact]
+	public void Pipe_ParameterlessHandler_OnDirectDu_Invokes()
+	{
+		var handler = new Mock<Action>();
+		Du<Int32, String> du = 42;
+
+		None? result = du | handler.Object;
+
+		result.Should().BeNull();
+		handler.Verify(h => h(), Times.Once);
+	}
+
+	[Fact]
+	public void Pipe_ParameterlessHandler_TerminatesChain_NotInvokedAfterPriorMatch()
+	{
+		var intHandler = new Mock<Action<Int32>>();
+		var elseHandler = new Mock<Action>();
+		Du<Int32, String> du = 42;
+
+		None? terminator = du | intHandler.Object | elseHandler.Object;
+
+		terminator.Should().BeNull();
+		intHandler.Verify(h => h(42), Times.Once);
+		elseHandler.Verify(h => h(), Times.Never);
+	}
+
+	[Fact]
+	public void Pipe_ParameterlessHandler_TerminatesChain_FiresWhenNothingMatched()
+	{
+		var intHandler = new Mock<Action<Int32>>();
+		var stringHandler = new Mock<Action<String>>();
+		var elseHandler = new Mock<Action>();
+		Du<Int32, String, Double> du = 3.14;
+
+		None? terminator = du | intHandler.Object | stringHandler.Object | elseHandler.Object;
+
+		terminator.Should().BeNull();
+		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
+		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
+		elseHandler.Verify(h => h(), Times.Once);
+	}
+
+	[Fact]
+	public void Pipe_ElseHandler_DuWithNonePadding_SkipsNoneArm()
+	{
+		var handler = new Mock<Action<Else>>();
+		Du<String, None> du = default(None);
+
+		None? result = du | handler.Object;
+
+		result.Should().BeNull();
+		handler.Verify(h => h(It.IsAny<Else>()), Times.Never);
+	}
+
+	[Fact]
+	public void Pipe_ParameterlessHandler_DuWithNonePadding_SkipsNoneArm()
+	{
+		var handler = new Mock<Action>();
+		Du<String, None> du = default(None);
+
+		None? result = du | handler.Object;
+
+		result.Should().BeNull();
+		handler.Verify(h => h(), Times.Never);
+	}
 }
