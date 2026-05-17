@@ -13,7 +13,7 @@ var label = du.Match(i => $"int: {i}", s => $"str: {s}");
 dotnet add package DiscriminatedUnion
 ```
 
-Targets `net10.0`. Namespace `NickStrupat`.
+Targets `net10.0`. Root namespace `DiscriminatedUnion` (with `DiscriminatedUnion.Extensions` for the `Pick`/`When`/`|`/`Else` extensions and `DiscriminatedUnion.Visitors` for the visitor interfaces).
 
 ## Two usage modes
 
