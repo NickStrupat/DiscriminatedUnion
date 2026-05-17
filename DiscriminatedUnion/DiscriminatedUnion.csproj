@@ -48,6 +48,10 @@
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>PickExtensions.Generated.cs</LastGenOutput>
       </None>
+      <None Update="Extensions\WhenExtensions.Generated.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>WhenExtensions.Generated.cs</LastGenOutput>
+      </None>
     </ItemGroup>
     <ItemGroup>
       <Compile Update="Templates\Du.Generated.cs">
@@ -64,6 +68,11 @@
         <AutoGen>True</AutoGen>
         <DesignTime>True</DesignTime>
         <DependentUpon>PickExtensions.Generated.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Extensions\WhenExtensions.Generated.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>WhenExtensions.Generated.tt</DependentUpon>
       </Compile>
     </ItemGroup>
 
