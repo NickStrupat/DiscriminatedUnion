@@ -20,7 +20,7 @@ Targets `net10.0`. Root namespace `DiscriminatedUnion` (with `DiscriminatedUnion
 ### 1. Anonymous union — `Du<T1, ..., Tn>` struct
 
 ```csharp
-using NickStrupat;
+using DiscriminatedUnion;
 
 Du<int, string> du = "hello";          // implicit conversion per arm
 
