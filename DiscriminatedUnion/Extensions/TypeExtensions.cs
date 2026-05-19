@@ -1,5 +1,3 @@
-using static System.Reflection.BindingFlags;
-
 namespace DiscriminatedUnion.Extensions;
 
 public static class TypeExtensions
@@ -12,15 +10,5 @@ public static class TypeExtensions
 				-1 => type.Name,
 				var i => $"{type.Name[..i]}<{type.GetGenericArguments().Select(x => x.Name).Join(", ")}>"
 			};
-	}
-
-	internal static TField? GetFieldValue<TField>(this Object obj, String fieldName)
-	{
-		ArgumentNullException.ThrowIfNull(obj);
-		ArgumentNullException.ThrowIfNull(fieldName);
-		var field = obj.GetType().GetField(fieldName, Instance | Public | NonPublic);
-		if (field is null)
-			throw new ArgumentException($"Field '{fieldName}' not found in type '{obj.GetType()}'.");
-		return (TField?)field.GetValue(obj);
 	}
 }

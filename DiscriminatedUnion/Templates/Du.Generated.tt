@@ -13,7 +13,9 @@ using DiscriminatedUnion.Visitors;
 
 namespace DiscriminatedUnion;
 <#
-for (var i = 1; i != MaxDuTypes; i++)
+// Arity 2 (Du<T1, T2>) is hand-written in Du_2.cs with a specialized
+// boxing-free storage layout, so it is skipped here.
+for (var i = 2; i != MaxDuTypes; i++)
 {
 	var range = Enumerable.Range(1, i + 1).ToArray();
 	var gps = String.Join(", ", from n in range select $"T{n}");
@@ -28,6 +30,7 @@ for (var i = 1; i != MaxDuTypes; i++)
 public readonly struct <#=duName#>
 	: IEquatable<<#=duName#>>
 	, IDu<<#=duName#>>
+	, IDuIndex
 	<#=constraints#>
 {
 	internal readonly UnmanagedStorage unmanaged;
@@ -36,6 +39,7 @@ public readonly struct <#=duName#>
 	internal T Get<T>() where T : notnull => Du.Get<T>(managed, in unmanaged);
 
 	internal Byte GetIndexUnsafe() => Du.GetIndexUnsafe(managed, in unmanaged);
+	Byte IDuIndex.GetIndexUnsafe() => GetIndexUnsafe();
 	private Byte GetIndex() => Du.GetIndex(managed, in unmanaged);
 
 	private static <#=duName#> InitUnsafe<T>(ref T instance, Byte index) where T : notnull => new(Du.Init(ref instance, index));

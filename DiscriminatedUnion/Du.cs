@@ -67,14 +67,9 @@ internal static class Du
 	{
 		private readonly IDu du = du; // hides the primary constructor parameter from the debugger display (at least in Rider)
 
-		public Byte Index
-		{
-			get
-			{
-				var unmanaged = du.GetFieldValue<UnmanagedStorage>(nameof(Du<,>.unmanaged));
-				return GetIndex(du.GetFieldValue<Object>(nameof(Du<,>.managed))!, in unmanaged);
-			}
-		}
+		public Byte Index => ((IDuIndex)du).GetIndexUnsafe() is var i && i > 0
+			? i
+			: throw new InvalidInstanceException();
 
 		public Object Value
 		{

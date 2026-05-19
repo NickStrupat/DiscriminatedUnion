@@ -8,7 +8,7 @@ public class StorageOptimizationTests
 	[Fact]
 	public void DUSize()
 	{
-		Assert.Equal(24, Unsafe.SizeOf<Du<Int32, Object>>());
+		Assert.Equal(16, Unsafe.SizeOf<Du<Int32, Object>>());
 	}
 
 	// [Fact]

@@ -11,8 +11,12 @@ namespace Tests;
 
 public class BasicTests
 {
-	[Fact]
-	public void TestSize24() => TypeLayout.GetLayout<Du<Int32, String>>().Size.Should().Be(24);
+	[Theory]
+	[InlineData(16, typeof(Du<Int32, String>))]
+	[InlineData(32, typeof(Du<Guid, String>))]
+	[InlineData(24, typeof(Du<Int32, String, Guid>))]
+	[InlineData(24, typeof(Du<Int32, String, Guid, Boolean>))]
+	public void TestSize(Int32 expectedSize, Type type) => TypeLayout.GetLayout(type).Size.Should().Be(expectedSize);
 
 	[Fact]
 	public void DefaultInitialization_WhenSwitchIsInvoked_ThrowsInvalidInstanceException()
