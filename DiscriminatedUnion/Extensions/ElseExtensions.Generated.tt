@@ -8,23 +8,18 @@ namespace DiscriminatedUnion.Extensions;
 
 public static class ElseExtensions
 {
+	// Special case: in Du<T1, None>, the None arm represents "no value" — Else skips it.
 	extension<T1>(Du<T1, None> du) where T1 : notnull
 	{
-		public None? Else(Action<Object> handler)
+		public None Else(Action<Object> handler)
 		{
 			switch (du.GetIndexUnsafe())
 			{
-				case 1: handler(du.Get<T1>()); return null;
-				case 2: return null;
+				case 1: handler(du.Get<T1>()); return default;
+				case 2: return default;
 				default: throw new InvalidInstanceException();
 			}
 		}
-	}
-
-	extension<T1>(Du<T1, None>? du) where T1 : notnull
-	{
-		public None? Else(Action<Object> handler)
-			=> du is null ? null : du.Value.Else(handler);
 	}
 <#
 for (var i = 1; i != MaxDuTypes; i++)
@@ -38,12 +33,12 @@ for (var i = 1; i != MaxDuTypes; i++)
 	extension<<#=gps#>>(<#=duName#> du)
 		<#=constraints#>
 	{
-		public None? Else(Action<Object> handler)
+		public None Else(Action<Object> handler)
 		{
 			switch (du.GetIndexUnsafe())
 			{
 <#	foreach (var n in range) {#>
-				case <#=n#>: handler(du.Get<T<#=n#>>()); return null;
+				case <#=n#>: handler(du.Get<T<#=n#>>()); return default;
 <#	}#>
 				default: throw new InvalidInstanceException();
 			}
@@ -53,14 +48,24 @@ for (var i = 1; i != MaxDuTypes; i++)
 	extension<<#=gps#>>(<#=duName#>? du)
 		<#=constraints#>
 	{
-		public None? Else(Action<Object> handler)
-			=> du is null ? null : du.Value.Else(handler);
+		public None Else(Action<Object> handler)
+			=> du is null ? default : du.Value.Else(handler);
+	}
+
+	extension<<#=gps#>>(Du<<#=duName#>, None> wrapped)
+		<#=constraints#>
+	{
+		public None Else(Action<Object> handler)
+		{
+			if (wrapped.TryPick<<#=duName#>>(out var inner)) return inner.Else(handler);
+			return default;
+		}
 	}
 
 	extension<<#=gps#>>(DuBase<<#=gps#>> du)
 		<#=constraints#>
 	{
-		public None? Else(Action<Object> handler) => du.Du.Else(handler);
+		public None Else(Action<Object> handler) => du.Du.Else(handler);
 	}
 <#}#>
 }

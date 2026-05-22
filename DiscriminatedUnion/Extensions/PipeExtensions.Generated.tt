@@ -8,43 +8,50 @@ namespace DiscriminatedUnion.Extensions;
 
 public static class PipeExtensions
 {
+	// Special case: in Du<T1, None>, the None arm represents "no value".
+	// Action<T1>, Action<Else>, and parameterless Action all collapse to plain None.
 	extension<T1>(Du<T1, None>) where T1 : notnull
 	{
-		public static None? operator |(Du<T1, None> du, Action<T1> handler) => du.When(handler);
+		public static None operator |(Du<T1, None> du, Action<T1> handler) => du.When(handler);
 
-		public static None? operator |(Du<T1, None> du, Action<Else> handler)
+		public static None operator |(Du<T1, None> du, Action<Else> handler)
 		{
 			switch (du.GetIndexUnsafe())
 			{
-				case 1: handler(new Else(du.Get<T1>())); return null;
-				case 2: return null;
+				case 1: handler(new Else(du.Get<T1>())); return default;
+				case 2: return default;
 				default: throw new InvalidInstanceException();
 			}
 		}
 
-		public static None? operator |(Du<T1, None> du, Action handler)
+		public static None operator |(Du<T1, None> du, Action handler)
 		{
 			switch (du.GetIndexUnsafe())
 			{
-				case 1: handler(); return null;
-				case 2: return null;
+				case 1: handler(); return default;
+				case 2: return default;
 				default: throw new InvalidInstanceException();
 			}
 		}
 	}
 
-	extension<T1>(Du<T1, None>?) where T1 : notnull
+	extension<T1>(Du<Du<T1, None>, None>) where T1 : notnull
 	{
-		public static None? operator |(Du<T1, None>? du, Action<T1> handler)
-			=> du is null ? null : du.Value | handler;
+		public static None operator |(Du<Du<T1, None>, None> wrapped, Action<T1> handler) => wrapped.When(handler);
+	}
 
-		public static None? operator |(Du<T1, None>? du, Action<Else> handler)
-			=> du is null ? null : du.Value | handler;
-
-		public static None? operator |(Du<T1, None>? du, Action handler)
-			=> du is null ? null : du.Value | handler;
+	extension<T1>(DuBase<T1, None>) where T1 : notnull
+	{
+		public static None operator |(DuBase<T1, None> du, Action<T1> handler) => du.Du | handler;
 	}
 <#
+String Residual(System.Collections.Generic.IList<String> remaining)
+{
+	if (remaining.Count == 0) return "None";
+	if (remaining.Count == 1) return $"Du<{remaining[0]}, None>";
+	return $"Du<Du<{String.Join(", ", remaining)}>, None>";
+}
+
 for (var i = 1; i != MaxDuTypes; i++)
 {
 	var range = Enumerable.Range(1, i + 1).ToArray();
@@ -59,49 +66,52 @@ for (var i = 1; i != MaxDuTypes; i++)
 <#	foreach (var pickN in range)
 	{
 		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
-		if (remaining.Count < 2) remaining.Add("None");
-		var residualName = $"Du<{String.Join(", ", remaining)}>";
+		var residualName = Residual(remaining);
 #>
-		public static <#=residualName#>? operator |(<#=duName#> du, Action<T<#=pickN#>> handler) => du.When(handler);
+		public static <#=residualName#> operator |(<#=duName#> du, Action<T<#=pickN#>> handler) => du.When(handler);
 
 <#	}#>
-		public static None? operator |(<#=duName#> du, Action<Else> handler)
+		public static None operator |(<#=duName#> du, Action<Else> handler)
 		{
 			switch (du.GetIndexUnsafe())
 			{
 <#	foreach (var n in range) {#>
-				case <#=n#>: handler(new Else(du.Get<T<#=n#>>())); return null;
+				case <#=n#>: handler(new Else(du.Get<T<#=n#>>())); return default;
 <#	}#>
 				default: throw new InvalidInstanceException();
 			}
 		}
 
-		public static None? operator |(<#=duName#> du, Action handler)
+		public static None operator |(<#=duName#> du, Action handler)
 		{
 			if (du.GetIndexUnsafe() == 0) throw new InvalidInstanceException();
 			handler();
-			return null;
+			return default;
 		}
 	}
 
-	extension<<#=gps#>>(<#=duName#>?)
+	extension<<#=gps#>>(Du<<#=duName#>, None>)
 		<#=constraints#>
 	{
 <#	foreach (var pickN in range)
 	{
 		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
-		if (remaining.Count < 2) remaining.Add("None");
-		var residualName = $"Du<{String.Join(", ", remaining)}>";
+		var residualName = Residual(remaining);
 #>
-		public static <#=residualName#>? operator |(<#=duName#>? du, Action<T<#=pickN#>> handler)
-			=> du is null ? null : du.Value | handler;
+		public static <#=residualName#> operator |(Du<<#=duName#>, None> wrapped, Action<T<#=pickN#>> handler) => wrapped.When(handler);
 
 <#	}#>
-		public static None? operator |(<#=duName#>? du, Action<Else> handler)
-			=> du is null ? null : du.Value | handler;
+		public static None operator |(Du<<#=duName#>, None> wrapped, Action<Else> handler)
+		{
+			if (wrapped.TryPick<<#=duName#>>(out var inner)) return inner | handler;
+			return default;
+		}
 
-		public static None? operator |(<#=duName#>? du, Action handler)
-			=> du is null ? null : du.Value | handler;
+		public static None operator |(Du<<#=duName#>, None> wrapped, Action handler)
+		{
+			if (wrapped.TryPick<<#=duName#>>(out var inner)) return inner | handler;
+			return default;
+		}
 	}
 
 	extension<<#=gps#>>(DuBase<<#=gps#>>)
@@ -110,17 +120,16 @@ for (var i = 1; i != MaxDuTypes; i++)
 <#	foreach (var pickN in range)
 	{
 		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
-		if (remaining.Count < 2) remaining.Add("None");
-		var residualName = $"Du<{String.Join(", ", remaining)}>";
+		var residualName = Residual(remaining);
 #>
-		public static <#=residualName#>? operator |(DuBase<<#=gps#>> du, Action<T<#=pickN#>> handler)
+		public static <#=residualName#> operator |(DuBase<<#=gps#>> du, Action<T<#=pickN#>> handler)
 			=> du.Du | handler;
 
 <#	}#>
-		public static None? operator |(DuBase<<#=gps#>> du, Action<Else> handler)
+		public static None operator |(DuBase<<#=gps#>> du, Action<Else> handler)
 			=> du.Du | handler;
 
-		public static None? operator |(DuBase<<#=gps#>> du, Action handler)
+		public static None operator |(DuBase<<#=gps#>> du, Action handler)
 			=> du.Du | handler;
 	}
 <#}#>

@@ -8,19 +8,48 @@ namespace DiscriminatedUnion.Extensions;
 
 public static class PickExtensions
 {
+	// Special case: in Du<T1, None>, picking T1 leaves only the None padding, so the terminator
+	// collapses to plain None (instead of Du<None, None>). Overload resolution prefers this
+	// more-specific extension over the general Du<T1, T2> Pick(out T1?).
 	extension<T1>(Du<T1, None> du) where T1 : notnull
 	{
-		public None? Pick(out T1? matched)
+		public None Pick(out T1? matched)
 		{
 			switch (du.GetIndexUnsafe())
 			{
-				case 1: matched = du.Get<T1>(); return null;
-				case 2: matched = default; return default(None);
+				case 1: matched = du.Get<T1>(); return default;
+				case 2: matched = default; return default;
 				default: throw new InvalidInstanceException();
 			}
 		}
 	}
+
+	extension<T1>(Du<Du<T1, None>, None> wrapped) where T1 : notnull
+	{
+		public None Pick(out T1? matched)
+		{
+			if (wrapped.TryPick<Du<T1, None>>(out var inner)) return inner.Pick(out matched);
+			matched = default;
+			return default;
+		}
+	}
+
+	extension<T1>(DuBase<T1, None> du) where T1 : notnull
+	{
+		public None Pick(out T1? matched) => du.Du.Pick(out matched);
+	}
 <#
+// Compute the residual type string after removing one arm:
+//   0 remaining → None (handled terminator)
+//   1 remaining → Du<that, None>
+//   2+ remaining → Du<Du<those...>, None>
+String Residual(System.Collections.Generic.IList<String> remaining)
+{
+	if (remaining.Count == 0) return "None";
+	if (remaining.Count == 1) return $"Du<{remaining[0]}, None>";
+	return $"Du<Du<{String.Join(", ", remaining)}>, None>";
+}
+
 for (var i = 1; i != MaxDuTypes; i++)
 {
 	var range = Enumerable.Range(1, i + 1).ToArray();
@@ -35,22 +64,44 @@ for (var i = 1; i != MaxDuTypes; i++)
 <#	foreach (var pickN in range)
 	{
 		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
-		if (remaining.Count < 2) remaining.Add("None");
-		var residualName = $"Du<{String.Join(", ", remaining)}>";
+		var residualName = Residual(remaining);
 #>
-		public <#=residualName#>? Pick(out T<#=pickN#>? matched)
+		public <#=residualName#> Pick(out T<#=pickN#>? matched)
 		{
 			switch (du.GetIndexUnsafe())
 			{
 <#		foreach (var n in range) {
 			if (n == pickN) {#>
-				case <#=n#>: matched = du.Get<T<#=n#>>(); return null;
-<#			} else {#>
-				case <#=n#>: matched = default; return du.Get<T<#=n#>>();
+				case <#=n#>: matched = du.Get<T<#=n#>>(); return new(instance2: default(None));
+<#			} else if (remaining.Count == 1) {#>
+				case <#=n#>: matched = default; return new(instance1: du.Get<T<#=n#>>());
+<#			} else {
+				var innerName = $"Du<{String.Join(", ", remaining)}>";
+#>
+				case <#=n#>: matched = default; return new(instance1: (<#=innerName#>)du.Get<T<#=n#>>());
 <#			}
 		}#>
 				default: throw new InvalidInstanceException();
 			}
+		}
+
+<#	}#>
+	}
+
+	extension<<#=gps#>>(Du<<#=duName#>, None> wrapped)
+		<#=constraints#>
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		var residualName = Residual(remaining);
+		var handledReturn = residualName == "None" ? "default" : "new(instance2: default(None))";
+#>
+		public <#=residualName#> Pick(out T<#=pickN#>? matched)
+		{
+			if (wrapped.TryPick<<#=duName#>>(out var inner)) return inner.Pick(out matched);
+			matched = default;
+			return <#=handledReturn#>;
 		}
 
 <#	}#>
@@ -62,10 +113,9 @@ for (var i = 1; i != MaxDuTypes; i++)
 <#	foreach (var pickN in range)
 	{
 		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
-		if (remaining.Count < 2) remaining.Add("None");
-		var residualName = $"Du<{String.Join(", ", remaining)}>";
+		var residualName = Residual(remaining);
 #>
-		public <#=residualName#>? Pick(out T<#=pickN#>? matched) => du.Du.Pick(out matched);
+		public <#=residualName#> Pick(out T<#=pickN#>? matched) => du.Du.Pick(out matched);
 <#	}#>
 	}
 <#}#>

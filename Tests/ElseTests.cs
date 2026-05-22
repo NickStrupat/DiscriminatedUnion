@@ -8,14 +8,12 @@ namespace Tests;
 public class ElseTests
 {
 	[Fact]
-	public void Else_OnDu_InvokesHandlerWithBoxedHeldValue_ReturnsNull()
+	public void Else_OnDu_InvokesHandlerWithBoxedHeldValue_ReturnsHandled()
 	{
 		var handler = new Mock<Action<Object>>();
 		Du<Int32, String> du = 42;
 
-		None? result = du.Else(handler.Object);
-
-		result.Should().BeNull();
+		None result = du.Else(handler.Object);
 		handler.Verify(h => h(42), Times.Once);
 	}
 
@@ -25,21 +23,17 @@ public class ElseTests
 		var handler = new Mock<Action<Object>>();
 		Du<Int32, String> du = "hi";
 
-		None? result = du.Else(handler.Object);
-
-		result.Should().BeNull();
+		None result = du.Else(handler.Object);
 		handler.Verify(h => h("hi"), Times.Once);
 	}
 
 	[Fact]
-	public void Else_OnNullableNull_DoesNotInvoke_ReturnsNull()
+	public void Else_OnNullableNull_DoesNotInvoke_ReturnsHandled()
 	{
 		var handler = new Mock<Action<Object>>();
 		Du<Int32, String>? du = null;
 
-		None? result = du.Else(handler.Object);
-
-		result.Should().BeNull();
+		None result = du.Else(handler.Object);
 		handler.Verify(h => h(It.IsAny<Object>()), Times.Never);
 	}
 
@@ -49,9 +43,7 @@ public class ElseTests
 		var handler = new Mock<Action<Object>>();
 		Du<Int32, String>? du = new Du<Int32, String>(7);
 
-		None? result = du.Else(handler.Object);
-
-		result.Should().BeNull();
+		None result = du.Else(handler.Object);
 		handler.Verify(h => h(7), Times.Once);
 	}
 
@@ -64,9 +56,7 @@ public class ElseTests
 
 		Du<Int32, String, Double> du = 3.14;
 
-		None? terminator = (du | intHandler.Object | stringHandler.Object).Else(elseHandler.Object);
-
-		terminator.Should().BeNull();
+		None terminator = (du | intHandler.Object | stringHandler.Object).Else(elseHandler.Object);
 		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
 		elseHandler.Verify(h => h(3.14), Times.Once);
@@ -81,9 +71,7 @@ public class ElseTests
 
 		Du<Int32, String, Double> du = "hit";
 
-		None? terminator = (du | intHandler.Object | stringHandler.Object).Else(elseHandler.Object);
-
-		terminator.Should().BeNull();
+		None terminator = (du | intHandler.Object | stringHandler.Object).Else(elseHandler.Object);
 		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 		stringHandler.Verify(h => h("hit"), Times.Once);
 		elseHandler.Verify(h => h(It.IsAny<Object>()), Times.Never);
@@ -105,9 +93,7 @@ public class ElseTests
 		var handler = new Mock<Action<Object>>();
 		Du<String, None> du = default(None);
 
-		None? result = du.Else(handler.Object);
-
-		result.Should().BeNull();
+		None result = du.Else(handler.Object);
 		handler.Verify(h => h(It.IsAny<Object>()), Times.Never);
 	}
 }

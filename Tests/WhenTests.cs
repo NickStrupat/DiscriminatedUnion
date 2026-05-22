@@ -8,14 +8,14 @@ namespace Tests;
 public class WhenTests
 {
 	[Fact]
-	public void When_TwoArm_MatchingArm_InvokesHandlerAndReturnsNull()
+	public void When_TwoArm_MatchingArm_InvokesHandlerAndReturnsHandled()
 	{
 		var handler = new Mock<Action<Int32>>();
 		Du<Int32, String> du = 42;
 
-		Du<String, None>? residual = du.When(handler.Object);
+		Du<String, None> residual = du.When(handler.Object);
 
-		residual.Should().BeNull();
+		residual.TryPick<None>(out _).Should().BeTrue();
 		handler.Verify(h => h(42), Times.Once);
 	}
 
@@ -25,10 +25,9 @@ public class WhenTests
 		var handler = new Mock<Action<Int32>>();
 		Du<Int32, String> du = "hello";
 
-		Du<String, None>? residual = du.When(handler.Object);
+		Du<String, None> residual = du.When(handler.Object);
 
-		residual.Should().NotBeNull();
-		residual!.Value.TryPick<String>(out var s).Should().BeTrue();
+		residual.TryPick<String>(out var s).Should().BeTrue();
 		s.Should().Be("hello");
 		handler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 	}
@@ -39,9 +38,9 @@ public class WhenTests
 		var handler = new Mock<Action<String>>();
 		Du<Int32, String, Double> du = "match";
 
-		Du<Int32, Double>? residual = du.When(handler.Object);
+		Du<Du<Int32, Double>, None> residual = du.When(handler.Object);
 
-		residual.Should().BeNull();
+		residual.TryPick<None>(out _).Should().BeTrue();
 		handler.Verify(h => h("match"), Times.Once);
 	}
 
@@ -51,10 +50,10 @@ public class WhenTests
 		var handler = new Mock<Action<Int32>>();
 		Du<Int32, String, Double> du = 3.14;
 
-		Du<String, Double>? residual = du.When(handler.Object);
+		Du<Du<String, Double>, None> residual = du.When(handler.Object);
 
-		residual.Should().NotBeNull();
-		residual!.Value.TryPick<Double>(out var d).Should().BeTrue();
+		residual.TryPick<Du<String, Double>>(out var inner).Should().BeTrue();
+		inner.TryPick<Double>(out var d).Should().BeTrue();
 		d.Should().Be(3.14);
 		handler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 	}
@@ -68,12 +67,10 @@ public class WhenTests
 
 		Du<Int32, String, Double> du = "hit";
 
-		None? terminator = du
+		None terminator = du
 			.When(intHandler.Object)
-			?.When(stringHandler.Object)
-			?.When(doubleHandler.Object);
-
-		terminator.Should().BeNull();
+			.When(stringHandler.Object)
+			.When(doubleHandler.Object);
 		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 		stringHandler.Verify(h => h("hit"), Times.Once);
 		doubleHandler.Verify(h => h(It.IsAny<Double>()), Times.Never);
@@ -88,12 +85,10 @@ public class WhenTests
 
 		Du<Int32, String, Double> du = 3.14;
 
-		None? terminator = du
+		None terminator = du
 			.When(intHandler.Object)
-			?.When(stringHandler.Object)
-			?.When(doubleHandler.Object);
-
-		terminator.Should().BeNull();
+			.When(stringHandler.Object)
+			.When(doubleHandler.Object);
 		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
 		doubleHandler.Verify(h => h(3.14), Times.Once);
@@ -105,22 +100,19 @@ public class WhenTests
 		var handler = new Mock<Action<Int32>>();
 		Du<Int32, None> du = 42;
 
-		None? residual = du.When(handler.Object);
-
-		residual.Should().BeNull();
+		None residual = du.When(handler.Object);
 		handler.Verify(h => h(42), Times.Once);
 	}
 
 	[Fact]
-	public void When_DuWithNonePadding_HoldingNone_DoesNotInvokeHandler_ReturnsNoneSingleton()
+	public void When_DuWithNonePadding_HoldingNone_DoesNotInvokeHandler()
 	{
 		var handler = new Mock<Action<String>>();
 		Du<String, None> du = default(None);
 
-		None? residual = du.When(handler.Object);
+		None residual = du.When(handler.Object);
 
-		residual.Should().NotBeNull();
-		residual!.Value.Should().Be(default(None));
+		// None can't structurally distinguish handled/unhandled; behavioral assertion only.
 		handler.Verify(h => h(It.IsAny<String>()), Times.Never);
 	}
 
@@ -141,12 +133,10 @@ public class WhenTests
 		var handler = new Mock<Action<Double>>();
 		Du<Int32, String, Double> du = 3.14;
 
-		None? terminator = du
+		None terminator = du
 			.Pick(out Int32 _)
-			?.Pick(out String? _)
-			?.When(handler.Object);
-
-		terminator.Should().BeNull();
+			.Pick(out String? _)
+			.When(handler.Object);
 		handler.Verify(h => h(3.14), Times.Once);
 	}
 }

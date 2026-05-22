@@ -8,14 +8,14 @@ namespace Tests;
 public class PipeTests
 {
 	[Fact]
-	public void Pipe_TwoArm_MatchingArm_InvokesHandlerAndReturnsNull()
+	public void Pipe_TwoArm_MatchingArm_InvokesHandlerAndReturnsHandled()
 	{
 		var handler = new Mock<Action<Int32>>();
 		Du<Int32, String> du = 42;
 
-		Du<String, None>? residual = du | handler.Object;
+		Du<String, None> residual = du | handler.Object;
 
-		residual.Should().BeNull();
+		residual.TryPick<None>(out _).Should().BeTrue();
 		handler.Verify(h => h(42), Times.Once);
 	}
 
@@ -25,10 +25,9 @@ public class PipeTests
 		var handler = new Mock<Action<Int32>>();
 		Du<Int32, String> du = "hello";
 
-		Du<String, None>? residual = du | handler.Object;
+		Du<String, None> residual = du | handler.Object;
 
-		residual.Should().NotBeNull();
-		residual!.Value.TryPick<String>(out var s).Should().BeTrue();
+		residual.TryPick<String>(out var s).Should().BeTrue();
 		s.Should().Be("hello");
 		handler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 	}
@@ -39,9 +38,9 @@ public class PipeTests
 		var handler = new Mock<Action<String>>();
 		Du<Int32, String, Double> du = "match";
 
-		Du<Int32, Double>? residual = du | handler.Object;
+		Du<Du<Int32, Double>, None> residual = du | handler.Object;
 
-		residual.Should().BeNull();
+		residual.TryPick<None>(out _).Should().BeTrue();
 		handler.Verify(h => h("match"), Times.Once);
 	}
 
@@ -54,9 +53,7 @@ public class PipeTests
 
 		Du<Int32, String, Double> du = "hit";
 
-		None? terminator = du | intHandler.Object | stringHandler.Object | doubleHandler.Object;
-
-		terminator.Should().BeNull();
+		None terminator = du | intHandler.Object | stringHandler.Object | doubleHandler.Object;
 		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 		stringHandler.Verify(h => h("hit"), Times.Once);
 		doubleHandler.Verify(h => h(It.IsAny<Double>()), Times.Never);
@@ -71,12 +68,10 @@ public class PipeTests
 
 		Du<Int32, String, Double> du = 3.14;
 
-		None? terminator = du
-		                   | intHandler.Object
-		                   | stringHandler.Object
-		                   | doubleHandler.Object;
-
-		terminator.Should().BeNull();
+		None terminator = du
+		                            | intHandler.Object
+		                            | stringHandler.Object
+		                            | doubleHandler.Object;
 		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
 		doubleHandler.Verify(h => h(3.14), Times.Once);
@@ -91,9 +86,7 @@ public class PipeTests
 
 		Du<Int32, String, Double> du = 42;
 
-		None? terminator = du | intHandler.Object | stringHandler.Object | doubleHandler.Object;
-
-		terminator.Should().BeNull();
+		None terminator = du | intHandler.Object | stringHandler.Object | doubleHandler.Object;
 		intHandler.Verify(h => h(42), Times.Once);
 		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
 		doubleHandler.Verify(h => h(It.IsAny<Double>()), Times.Never);
@@ -105,34 +98,20 @@ public class PipeTests
 		var handler = new Mock<Action<Int32>>();
 		Du<Int32, None> du = 42;
 
-		None? residual = du | handler.Object;
-
-		residual.Should().BeNull();
+		None residual = du | handler.Object;
 		handler.Verify(h => h(42), Times.Once);
 	}
 
 	[Fact]
-	public void Pipe_DuWithNonePadding_HoldingNone_DoesNotInvokeHandler_ReturnsNoneSingleton()
+	public void Pipe_DuWithNonePadding_HoldingNone_DoesNotInvokeHandler()
 	{
 		var handler = new Mock<Action<String>>();
 		Du<String, None> du = default(None);
 
-		None? residual = du | handler.Object;
+		None residual = du | handler.Object;
 
-		residual.Should().NotBeNull();
-		residual!.Value.Should().Be(default(None));
-		handler.Verify(h => h(It.IsAny<String>()), Times.Never);
-	}
-
-	[Fact]
-	public void Pipe_NullableReceiver_NullPropagates()
-	{
-		var handler = new Mock<Action<String>>();
-		Du<String, None>? source = null;
-
-		None? result = source | handler.Object;
-
-		result.Should().BeNull();
+		// Residual at terminator (None) has both arms as None type, so TryPick<None>
+		// always returns true. The behavioral assertion is that the handler did not fire.
 		handler.Verify(h => h(It.IsAny<String>()), Times.Never);
 	}
 
@@ -152,9 +131,7 @@ public class PipeTests
 		var handler = new Mock<Action<Else>>();
 		Du<Int32, String> du = 42;
 
-		None? result = du | handler.Object;
-
-		result.Should().BeNull();
+		None result = du | handler.Object;
 		handler.Verify(h => h(It.Is<Else>(r => r.Value.Equals(42))), Times.Once);
 	}
 
@@ -165,9 +142,7 @@ public class PipeTests
 		var restHandler = new Mock<Action<Else>>();
 		Du<Int32, String, Double> du = 42;
 
-		None? terminator = du | intHandler.Object | restHandler.Object;
-
-		terminator.Should().BeNull();
+		None terminator = du | intHandler.Object | restHandler.Object;
 		intHandler.Verify(h => h(42), Times.Once);
 		restHandler.Verify(h => h(It.IsAny<Else>()), Times.Never);
 	}
@@ -180,9 +155,7 @@ public class PipeTests
 		var restHandler = new Mock<Action<Else>>();
 		Du<Int32, String, Double> du = 3.14;
 
-		None? terminator = du | intHandler.Object | stringHandler.Object | restHandler.Object;
-
-		terminator.Should().BeNull();
+		None terminator = du | intHandler.Object | stringHandler.Object | restHandler.Object;
 		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
 		restHandler.Verify(h => h(It.Is<Else>(r => r.Value.Equals(3.14))), Times.Once);
@@ -194,9 +167,7 @@ public class PipeTests
 		var handler = new Mock<Action>();
 		Du<Int32, String> du = 42;
 
-		None? result = du | handler.Object;
-
-		result.Should().BeNull();
+		None result = du | handler.Object;
 		handler.Verify(h => h(), Times.Once);
 	}
 
@@ -207,9 +178,7 @@ public class PipeTests
 		var elseHandler = new Mock<Action>();
 		Du<Int32, String> du = 42;
 
-		None? terminator = du | intHandler.Object | elseHandler.Object;
-
-		terminator.Should().BeNull();
+		None terminator = du | intHandler.Object | elseHandler.Object;
 		intHandler.Verify(h => h(42), Times.Once);
 		elseHandler.Verify(h => h(), Times.Never);
 	}
@@ -222,9 +191,7 @@ public class PipeTests
 		var elseHandler = new Mock<Action>();
 		Du<Int32, String, Double> du = 3.14;
 
-		None? terminator = du | intHandler.Object | stringHandler.Object | elseHandler.Object;
-
-		terminator.Should().BeNull();
+		None terminator = du | intHandler.Object | stringHandler.Object | elseHandler.Object;
 		intHandler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 		stringHandler.Verify(h => h(It.IsAny<String>()), Times.Never);
 		elseHandler.Verify(h => h(), Times.Once);
@@ -236,9 +203,7 @@ public class PipeTests
 		var handler = new Mock<Action<Else>>();
 		Du<String, None> du = default(None);
 
-		None? result = du | handler.Object;
-
-		result.Should().BeNull();
+		None result = du | handler.Object;
 		handler.Verify(h => h(It.IsAny<Else>()), Times.Never);
 	}
 
@@ -248,9 +213,7 @@ public class PipeTests
 		var handler = new Mock<Action>();
 		Du<String, None> du = default(None);
 
-		None? result = du | handler.Object;
-
-		result.Should().BeNull();
+		None result = du | handler.Object;
 		handler.Verify(h => h(), Times.Never);
 	}
 }
