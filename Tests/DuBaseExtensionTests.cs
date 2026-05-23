@@ -15,7 +15,7 @@ public partial class DuBaseExtensionTests
 	{
 		var r = new Result(42);
 
-		Du<String, None> residual = r.Pick(out Int32 matched);
+		Du<Du<String>, None> residual = r.Pick(out Int32 matched);
 
 		residual.TryPick<None>(out _).Should().BeTrue();
 		matched.Should().Be(42);
@@ -26,10 +26,11 @@ public partial class DuBaseExtensionTests
 	{
 		var r = new Result("hi");
 
-		Du<String, None> residual = r.Pick(out Int32 matched);
+		Du<Du<String>, None> residual = r.Pick(out Int32 matched);
 
 		matched.Should().Be(0);
-		residual.TryPick<String>(out var s).Should().BeTrue();
+		residual.TryPick<Du<String>>(out var inner).Should().BeTrue();
+		inner.TryPick<String>(out var s).Should().BeTrue();
 		s.Should().Be("hi");
 	}
 
@@ -39,7 +40,7 @@ public partial class DuBaseExtensionTests
 		var handler = new Mock<Action<String>>();
 		var r = new Result("matched");
 
-		Du<Int32, None> residual = r.When(handler.Object);
+		Du<Du<Int32>, None> residual = r.When(handler.Object);
 
 		residual.TryPick<None>(out _).Should().BeTrue();
 		handler.Verify(h => h("matched"), Times.Once);

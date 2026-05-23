@@ -8,8 +8,8 @@ namespace DiscriminatedUnion.Extensions;
 
 public static class PipeExtensions
 {
-	// Special case: in Du<T1, None>, the None arm represents "no value".
-	// Action<T1>, Action<Else>, and parameterless Action all collapse to plain None.
+	// User-facing ergonomic for Du<T, None> (optional T): both Action<T> and the
+	// catch-alls collapse to None directly.
 	extension<T1>(Du<T1, None>) where T1 : notnull
 	{
 		public static None operator |(Du<T1, None> du, Action<T1> handler) => du.When(handler);
@@ -35,20 +35,32 @@ public static class PipeExtensions
 		}
 	}
 
-	extension<T1>(Du<Du<T1, None>, None>) where T1 : notnull
-	{
-		public static None operator |(Du<Du<T1, None>, None> wrapped, Action<T1> handler) => wrapped.When(handler);
-	}
-
 	extension<T1>(DuBase<T1, None>) where T1 : notnull
 	{
 		public static None operator |(DuBase<T1, None> du, Action<T1> handler) => du.Du | handler;
+	}
+
+	// Chain terminator: Du<Du<T1>, None> | <handler> collapses to None.
+	extension<T1>(Du<Du<T1>, None>) where T1 : notnull
+	{
+		public static None operator |(Du<Du<T1>, None> wrapped, Action<T1> handler) => wrapped.When(handler);
+
+		public static None operator |(Du<Du<T1>, None> wrapped, Action<Else> handler)
+		{
+			if (wrapped.TryPick<Du<T1>>(out var inner)) handler(new Else(inner.Get<T1>()));
+			return default;
+		}
+
+		public static None operator |(Du<Du<T1>, None> wrapped, Action handler)
+		{
+			if (wrapped.TryPick<Du<T1>>(out _)) handler();
+			return default;
+		}
 	}
 <#
 String Residual(System.Collections.Generic.IList<String> remaining)
 {
 	if (remaining.Count == 0) return "None";
-	if (remaining.Count == 1) return $"Du<{remaining[0]}, None>";
 	return $"Du<Du<{String.Join(", ", remaining)}>, None>";
 }
 

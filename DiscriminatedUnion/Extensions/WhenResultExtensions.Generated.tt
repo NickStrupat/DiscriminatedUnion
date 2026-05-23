@@ -1,0 +1,111 @@
+<#@ template language="C#" hostspecific="true" #>
+<#@ import namespace="System.Linq" #>
+<#@ include file="..\Templates\Shared.ttinclude" #>
+
+#nullable enable
+
+namespace DiscriminatedUnion.Extensions;
+
+// Dual of WhenExtensions: handlers are Func<T, R> instead of Action<T>, and the
+// residual's terminator slot binds the handler's result type R instead of None.
+// Chain shape mirrors the Action dual: residuals always nest as
+// Du<Du<rest>, R>, with the 1-armed inner Du<T1> serving as the structural
+// disambiguator for the terminator extension.
+public static class WhenResultExtensions
+{
+	// Chain terminator: Du<Du<T1>, R> collapses to plain R.
+	extension<T1, R>(Du<Du<T1>, R> wrapped)
+		where T1 : notnull
+		where R : notnull
+	{
+		public R When(Func<T1, R> handler)
+		{
+			switch (wrapped.GetIndexUnsafe())
+			{
+				case 1: return handler(wrapped.Get<Du<T1>>().Get<T1>());
+				case 2: return wrapped.Get<R>();
+				default: throw new InvalidInstanceException();
+			}
+		}
+	}
+<#
+String Residual(System.Collections.Generic.IList<String> remaining)
+{
+	return $"Du<Du<{String.Join(", ", remaining)}>, R>";
+}
+
+String InnerDu(System.Collections.Generic.IList<String> remaining)
+{
+	return $"Du<{String.Join(", ", remaining)}>";
+}
+
+for (var i = 1; i != MaxDuTypes; i++)
+{
+	var range = Enumerable.Range(1, i + 1).ToArray();
+	var gps = String.Join(", ", from n in range select $"T{n}");
+	var duName = $"Du<{gps}>";
+	var constraints = String.Join("\n\t\t", from n in range select $"where T{n} : notnull");
+#>
+
+	extension<<#=gps#>>(<#=duName#> du)
+		<#=constraints#>
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		var residualName = Residual(remaining);
+		var innerName = InnerDu(remaining);
+#>
+		public <#=residualName#> When<R>(Func<T<#=pickN#>, R> handler) where R : notnull
+		{
+			switch (du.GetIndexUnsafe())
+			{
+<#		foreach (var n in range) {
+			if (n == pickN) {#>
+				case <#=n#>: return new(instance2: handler(du.Get<T<#=n#>>()));
+<#			} else {#>
+				case <#=n#>: return new(instance1: (<#=innerName#>)du.Get<T<#=n#>>());
+<#			}
+		}#>
+				default: throw new InvalidInstanceException();
+			}
+		}
+
+<#	}#>
+	}
+
+	extension<<#=gps#>, R>(Du<<#=duName#>, R> wrapped)
+		<#=constraints#>
+		where R : notnull
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		var residualName = Residual(remaining);
+#>
+		public <#=residualName#> When(Func<T<#=pickN#>, R> handler)
+		{
+			switch (wrapped.GetIndexUnsafe())
+			{
+				case 1: return wrapped.Get<<#=duName#>>().When(handler);
+				case 2: return new(instance2: wrapped.Get<R>());
+				default: throw new InvalidInstanceException();
+			}
+		}
+
+<#	}#>
+	}
+
+	extension<<#=gps#>>(DuBase<<#=gps#>> du)
+		<#=constraints#>
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		var residualName = Residual(remaining);
+#>
+		public <#=residualName#> When<R>(Func<T<#=pickN#>, R> handler) where R : notnull => du.Du.When(handler);
+<#	}#>
+	}
+<#}#>
+}

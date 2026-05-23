@@ -14,7 +14,7 @@ public class PickTests
 	{
 		Du<Int32, String> du = 42;
 
-		Du<String, None> residual = du.Pick(out Int32 matched);
+		Du<Du<String>, None> residual = du.Pick(out Int32 matched);
 
 		residual.TryPick<None>(out _).Should().BeTrue();
 		matched.Should().Be(42);
@@ -25,10 +25,11 @@ public class PickTests
 	{
 		Du<Int32, String> du = "hello";
 
-		Du<String, None> residual = du.Pick(out Int32 matched);
+		Du<Du<String>, None> residual = du.Pick(out Int32 matched);
 
 		matched.Should().Be(0);
-		residual.TryPick<String>(out var s).Should().BeTrue();
+		residual.TryPick<Du<String>>(out var inner).Should().BeTrue();
+		inner.TryPick<String>(out var s).Should().BeTrue();
 		s.Should().Be("hello");
 	}
 
@@ -37,10 +38,11 @@ public class PickTests
 	{
 		Du<Int32, String> du = 7;
 
-		Du<Int32, None> residual = du.Pick(out String? matched);
+		Du<Du<Int32>, None> residual = du.Pick(out String? matched);
 
 		matched.Should().BeNull();
-		residual.TryPick<Int32>(out var i).Should().BeTrue();
+		residual.TryPick<Du<Int32>>(out var inner).Should().BeTrue();
+		inner.TryPick<Int32>(out var i).Should().BeTrue();
 		i.Should().Be(7);
 	}
 
@@ -115,7 +117,7 @@ public class PickTests
 		var afterIntPeel = du.Pick(out Int32 _);   // Du<Du<String, Double>, None>
 		afterIntPeel.TryPick<None>(out _).Should().BeFalse();
 
-		var afterStringPeel = afterIntPeel.Pick(out String? _); // Du<Double, None>
+		var afterStringPeel = afterIntPeel.Pick(out String? _); // Du<Du<Double>, None>
 		afterStringPeel.TryPick<None>(out _).Should().BeFalse();
 
 		None afterDoublePeel = afterStringPeel.Pick(out Double d);
@@ -182,7 +184,7 @@ public class PickTests
 		Du<Int32, String, Double> du = 3.14;
 
 		var afterInt = du.Pick(out Int32 _);            // Du<Du<String, Double>, None>
-		var afterString = afterInt.Pick(out String? _); // Du<Double, None>
+		var afterString = afterInt.Pick(out String? _); // Du<Du<Double>, None>
 		None terminator = afterString.Pick(out Double d);
 		d.Should().Be(3.14);
 	}

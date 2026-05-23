@@ -53,10 +53,11 @@ The source generator emits the constructors, implicit conversions, equality, and
 | --- | --- | --- |
 | `Match(f1, …, fn)` | `TResult` | Yes — wrong arity is a compile error |
 | `Switch(a1, …, an)` | `void` | Yes |
-| `Pick<T>(out T?)` *(ext)* | residual `Du<…rest>?` | Yes — residual shape is checked by the compiler |
-| `When<T>(Action<T>)` *(ext)* | residual `Du<…rest>?` | Yes |
-| `\|` pipe operator | residual `Du<…rest>?` or `None?` | Yes — chain ends when all arms are stripped |
-| `Else(Action<object>)` *(ext)* | `None?` (terminator) | n/a — catch-all |
+| `Pick<T>(out T?)` *(ext)* | residual `Du<Du<…rest>, None>` | Yes — residual shape is checked by the compiler |
+| `When<T>(Action<T>)` *(ext)* | residual `Du<Du<…rest>, None>` | Yes |
+| `When<T, R>(Func<T, R>)` *(ext)* | residual `Du<Du<…rest>, R>` | Yes — chain collapses to `R` |
+| `\|` pipe operator | residual `Du<Du<…rest>, None>` / `Du<Du<…rest>, R>` / terminator | Yes — chain ends when all arms are stripped |
+| `Else(Action<object>)` *(ext)* | `None` (terminator) | n/a — catch-all |
 | `TryPick<T>(out T?)` | `bool` | No (runtime check per call) |
 | `TryCreate<T>(T value, out Du)` | `bool` | No (runtime check per call) |
 | `Accept<TVisitor, TResult>(ref TVisitor)` | `TResult` | Visitor's `Visit<T>` is generic — for arm-agnostic operations |
@@ -68,7 +69,7 @@ The source generator emits the constructors, implicit conversions, equality, and
 
 ## Residual extraction — `Pick`, `When`, `|`, `Else`
 
-`Pick`, `When`, and the `|` operator all strip one arm from a `Du`. The return type is a `Du<…>?` of the remaining arms (with a `None` arm appended once you're down to a single type, so the residual type doesn't degenerate into a bare `T?`). A null residual means the targeted arm matched; a non-null residual carries the value that didn't. Chaining is compile-time exhaustive — once every arm has been stripped, the residual type collapses to `None?`.
+`Pick`, `When`, and the `|` operator all strip one arm from a `Du`. The residual is `Du<Du<…rest>, None>` — the unhandled arms wrapped one level deep, with `None` in the second slot acting as the "handled" marker. The 1-armed inner `Du<T>` once you're down to a single remaining arm is what lets the chain terminate unambiguously: the terminator extension is keyed on the `Du<Du<T>, None>` shape, which the compiler can distinguish from any 2-armed general receiver. Chaining is compile-time exhaustive — once every arm has been stripped, the residual collapses to plain `None`.
 
 ```csharp
 using DiscriminatedUnion;
@@ -77,13 +78,13 @@ using DiscriminatedUnion.Extensions;
 Du<int, string, double> du = "hit";
 
 // Pick: out-param style
-Du<int, double>? rest = du.Pick(out string? matched);   // matched = "hit", rest = null
+Du<Du<int, double>, None> rest = du.Pick(out string? matched);   // matched = "hit"
 
 // When: invokes handler on match, returns residual
-Du<int, double>? rest2 = du.When(s => Console.WriteLine(s));
+Du<Du<int, double>, None> rest2 = du.When(s => Console.WriteLine(s));
 
-// Pipe operator: chain handlers, one per arm
-None? done = du
+// Pipe operator: chain handlers, one per arm. Terminator collapses to None.
+None done = du
     | (int    i) => Console.WriteLine($"int {i}")
     | (string s) => Console.WriteLine($"str {s}")
     | (double d) => Console.WriteLine($"dbl {d}");
@@ -92,20 +93,36 @@ None? done = du
 `Else` and two `|` overloads terminate a chain with a catch-all:
 
 ```csharp
-None? done = du
+None done = du
     | (int i)  => Console.WriteLine($"int {i}")
     | (Else e) => Console.WriteLine($"other: {e.Value}");   // boxed unhandled value
 
-None? done2 = du
+None done2 = du
     | (int i) => Console.WriteLine(i)
     | ()      => Console.WriteLine("not an int");           // parameterless catch-all
 
 // Or chain Else off a partial residual:
-None? done3 = (du | (int i) => Console.WriteLine(i))
+None done3 = (du | (int i) => Console.WriteLine(i))
     .Else(value => Console.WriteLine($"other: {value}"));
 ```
 
-All of these are also available on `DuBase<…>` subclasses and on `Du<…>?` (null propagates through the chain). `Du<T, None>` is recognized specially: the `None` arm is silently skipped by `|`/`Else`/parameterless handlers.
+These are also available on `DuBase<…>` subclasses. `Du<T, None>` (an "optional T") is recognized specially: `When`/`Pick`/`Else` on the value arm collapse straight to `None` without going through the residual chain.
+
+### Func-based residuals — `When<R>`, `|` with `Func<T, R>`
+
+The same surface has a dual that takes `Func<T, R>` instead of `Action<T>` and threads the handler's return value through the chain. The residual is `Du<Du<…rest>, R>` (bare `R` in the second slot, no wrapper) and the chain collapses to plain `R`:
+
+```csharp
+Du<int, string, double> du = "hit";
+
+string result = du
+    .When((int i)    => $"int:{i}")     // Du<Du<string, double>, string>
+    .When((string s) => $"str:{s}")     // Du<Du<double>, string>
+    .When((double d) => $"dbl:{d}");    // string
+// result == "str:hit"
+```
+
+`|` works the same way. `Func<Else, R>` and parameterless `Func<R>` catch-alls return `R` directly.
 
 ## Storage
 

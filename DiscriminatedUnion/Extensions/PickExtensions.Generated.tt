@@ -8,9 +8,10 @@ namespace DiscriminatedUnion.Extensions;
 
 public static class PickExtensions
 {
-	// Special case: in Du<T1, None>, picking T1 leaves only the None padding, so the terminator
-	// collapses to plain None (instead of Du<None, None>). Overload resolution prefers this
-	// more-specific extension over the general Du<T1, T2> Pick(out T1?).
+	// User-facing ergonomic for Du<T, None> (optional T): picking the value arm
+	// collapses to None directly. Chains never reach this shape — they terminate
+	// at Du<Du<T1>, None> instead — so this is kept purely for the user-facing
+	// "I have an optional and want to handle the value" case.
 	extension<T1>(Du<T1, None> du) where T1 : notnull
 	{
 		public None Pick(out T1? matched)
@@ -24,30 +25,41 @@ public static class PickExtensions
 		}
 	}
 
-	extension<T1>(Du<Du<T1, None>, None> wrapped) where T1 : notnull
-	{
-		public None Pick(out T1? matched)
-		{
-			if (wrapped.TryPick<Du<T1, None>>(out var inner)) return inner.Pick(out matched);
-			matched = default;
-			return default;
-		}
-	}
-
 	extension<T1>(DuBase<T1, None> du) where T1 : notnull
 	{
 		public None Pick(out T1? matched) => du.Du.Pick(out matched);
 	}
+
+	// Chain terminator. The inner Du<T1> is 1-armed, which is structurally
+	// distinct from any 2-armed Du<X, Y> general receiver, so the terminator
+	// extension wins overload resolution unambiguously.
+	extension<T1>(Du<Du<T1>, None> wrapped) where T1 : notnull
+	{
+		public None Pick(out T1? matched)
+		{
+			if (wrapped.TryPick<Du<T1>>(out var inner))
+			{
+				matched = inner.Get<T1>();
+				return default;
+			}
+			matched = default;
+			return default;
+		}
+	}
 <#
-// Compute the residual type string after removing one arm:
-//   0 remaining → None (handled terminator)
-//   1 remaining → Du<that, None>
-//   2+ remaining → Du<Du<those...>, None>
+// Compute the residual type string after removing one arm. Unlike the old
+// design that flattened single-remaining-arm residuals to Du<T, None>, the new
+// shape always nests inside Du<Du<...>, None> — the 1-armed inner Du<T> serves
+// as the structural disambiguator for the terminator extension.
 String Residual(System.Collections.Generic.IList<String> remaining)
 {
 	if (remaining.Count == 0) return "None";
-	if (remaining.Count == 1) return $"Du<{remaining[0]}, None>";
 	return $"Du<Du<{String.Join(", ", remaining)}>, None>";
+}
+
+String InnerDu(System.Collections.Generic.IList<String> remaining)
+{
+	return $"Du<{String.Join(", ", remaining)}>";
 }
 
 for (var i = 1; i != MaxDuTypes; i++)
@@ -65,6 +77,7 @@ for (var i = 1; i != MaxDuTypes; i++)
 	{
 		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
 		var residualName = Residual(remaining);
+		var innerName = InnerDu(remaining);
 #>
 		public <#=residualName#> Pick(out T<#=pickN#>? matched)
 		{
@@ -73,11 +86,7 @@ for (var i = 1; i != MaxDuTypes; i++)
 <#		foreach (var n in range) {
 			if (n == pickN) {#>
 				case <#=n#>: matched = du.Get<T<#=n#>>(); return new(instance2: default(None));
-<#			} else if (remaining.Count == 1) {#>
-				case <#=n#>: matched = default; return new(instance1: du.Get<T<#=n#>>());
-<#			} else {
-				var innerName = $"Du<{String.Join(", ", remaining)}>";
-#>
+<#			} else {#>
 				case <#=n#>: matched = default; return new(instance1: (<#=innerName#>)du.Get<T<#=n#>>());
 <#			}
 		}#>
@@ -95,13 +104,12 @@ for (var i = 1; i != MaxDuTypes; i++)
 	{
 		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
 		var residualName = Residual(remaining);
-		var handledReturn = residualName == "None" ? "default" : "new(instance2: default(None))";
 #>
 		public <#=residualName#> Pick(out T<#=pickN#>? matched)
 		{
 			if (wrapped.TryPick<<#=duName#>>(out var inner)) return inner.Pick(out matched);
 			matched = default;
-			return <#=handledReturn#>;
+			return new(instance2: default(None));
 		}
 
 <#	}#>

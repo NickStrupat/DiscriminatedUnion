@@ -8,7 +8,8 @@ namespace DiscriminatedUnion.Extensions;
 
 public static class ElseExtensions
 {
-	// Special case: in Du<T1, None>, the None arm represents "no value" — Else skips it.
+	// User-facing ergonomic for Du<T, None> (optional T): Else hands the value
+	// arm to the handler and skips None.
 	extension<T1>(Du<T1, None> du) where T1 : notnull
 	{
 		public None Else(Action<Object> handler)
@@ -19,6 +20,17 @@ public static class ElseExtensions
 				case 2: return default;
 				default: throw new InvalidInstanceException();
 			}
+		}
+	}
+
+	// Chain terminator: Du<Du<T1>, None>.Else hands the inner T1 to the
+	// handler (or no-op if already handled by a previous chain step).
+	extension<T1>(Du<Du<T1>, None> wrapped) where T1 : notnull
+	{
+		public None Else(Action<Object> handler)
+		{
+			if (wrapped.TryPick<Du<T1>>(out var inner)) handler(inner.Get<T1>());
+			return default;
 		}
 	}
 <#

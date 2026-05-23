@@ -52,9 +52,17 @@
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>WhenExtensions.Generated.cs</LastGenOutput>
       </None>
+      <None Update="Extensions\WhenResultExtensions.Generated.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>WhenResultExtensions.Generated.cs</LastGenOutput>
+      </None>
       <None Update="Extensions\PipeExtensions.Generated.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>PipeExtensions.Generated.cs</LastGenOutput>
+      </None>
+      <None Update="Extensions\PipeResultExtensions.Generated.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>PipeResultExtensions.Generated.cs</LastGenOutput>
       </None>
       <None Update="Extensions\ElseExtensions.Generated.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
@@ -82,10 +90,20 @@
         <DesignTime>True</DesignTime>
         <DependentUpon>WhenExtensions.Generated.tt</DependentUpon>
       </Compile>
+      <Compile Update="Extensions\WhenResultExtensions.Generated.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>WhenResultExtensions.Generated.tt</DependentUpon>
+      </Compile>
       <Compile Update="Extensions\PipeExtensions.Generated.cs">
         <AutoGen>True</AutoGen>
         <DesignTime>True</DesignTime>
         <DependentUpon>PipeExtensions.Generated.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Extensions\PipeResultExtensions.Generated.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>PipeResultExtensions.Generated.tt</DependentUpon>
       </Compile>
       <Compile Update="Extensions\ElseExtensions.Generated.cs">
         <AutoGen>True</AutoGen>

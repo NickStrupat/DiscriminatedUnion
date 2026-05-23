@@ -13,7 +13,7 @@ public class WhenTests
 		var handler = new Mock<Action<Int32>>();
 		Du<Int32, String> du = 42;
 
-		Du<String, None> residual = du.When(handler.Object);
+		Du<Du<String>, None> residual = du.When(handler.Object);
 
 		residual.TryPick<None>(out _).Should().BeTrue();
 		handler.Verify(h => h(42), Times.Once);
@@ -25,9 +25,10 @@ public class WhenTests
 		var handler = new Mock<Action<Int32>>();
 		Du<Int32, String> du = "hello";
 
-		Du<String, None> residual = du.When(handler.Object);
+		Du<Du<String>, None> residual = du.When(handler.Object);
 
-		residual.TryPick<String>(out var s).Should().BeTrue();
+		residual.TryPick<Du<String>>(out var inner).Should().BeTrue();
+		inner.TryPick<String>(out var s).Should().BeTrue();
 		s.Should().Be("hello");
 		handler.Verify(h => h(It.IsAny<Int32>()), Times.Never);
 	}

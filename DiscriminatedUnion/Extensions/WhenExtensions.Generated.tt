@@ -8,7 +8,8 @@ namespace DiscriminatedUnion.Extensions;
 
 public static class WhenExtensions
 {
-	// Special case for Du<T1, None>: When collapses to plain None (instead of Du<None, None>).
+	// User-facing ergonomic for Du<T, None>: When on the value arm collapses to
+	// plain None. Mirrors PickExtensions' Du<T, None> shortcut.
 	extension<T1>(Du<T1, None> du) where T1 : notnull
 	{
 		public None When(Action<T1> handler)
@@ -22,24 +23,24 @@ public static class WhenExtensions
 		}
 	}
 
-	extension<T1>(Du<Du<T1, None>, None> wrapped) where T1 : notnull
-	{
-		public None When(Action<T1> handler)
-		{
-			if (wrapped.TryPick<Du<T1, None>>(out var inner)) return inner.When(handler);
-			return default;
-		}
-	}
-
 	extension<T1>(DuBase<T1, None> du) where T1 : notnull
 	{
 		public None When(Action<T1> handler) => du.Du.When(handler);
+	}
+
+	// Chain terminator: Du<Du<T1>, None> collapses to None.
+	extension<T1>(Du<Du<T1>, None> wrapped) where T1 : notnull
+	{
+		public None When(Action<T1> handler)
+		{
+			if (wrapped.TryPick<Du<T1>>(out var inner)) handler(inner.Get<T1>());
+			return default;
+		}
 	}
 <#
 String Residual(System.Collections.Generic.IList<String> remaining)
 {
 	if (remaining.Count == 0) return "None";
-	if (remaining.Count == 1) return $"Du<{remaining[0]}, None>";
 	return $"Du<Du<{String.Join(", ", remaining)}>, None>";
 }
 
@@ -77,12 +78,11 @@ for (var i = 1; i != MaxDuTypes; i++)
 	{
 		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
 		var residualName = Residual(remaining);
-		var handledReturn = residualName == "None" ? "default" : "new(instance2: default(None))";
 #>
 		public <#=residualName#> When(Action<T<#=pickN#>> handler)
 		{
 			if (wrapped.TryPick<<#=duName#>>(out var inner)) return inner.When(handler);
-			return <#=handledReturn#>;
+			return new(instance2: default(None));
 		}
 
 <#	}#>

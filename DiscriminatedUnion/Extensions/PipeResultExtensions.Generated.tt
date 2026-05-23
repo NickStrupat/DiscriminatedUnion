@@ -1,0 +1,131 @@
+<#@ template language="C#" hostspecific="true" #>
+<#@ import namespace="System.Linq" #>
+<#@ include file="..\Templates\Shared.ttinclude" #>
+
+#nullable enable
+
+namespace DiscriminatedUnion.Extensions;
+
+// Dual of PipeExtensions: handlers are Func<T, R> instead of Action<T>, and the
+// residual's terminator slot binds bare R. Operators can't have method-level
+// type parameters, so R is declared on the extension and inferred from the
+// handler argument at the call site.
+public static class PipeResultExtensions
+{
+	// Chain terminator: Du<Du<T1>, R> collapses to plain R.
+	extension<T1, R>(Du<Du<T1>, R>)
+		where T1 : notnull
+		where R : notnull
+	{
+		public static R operator |(Du<Du<T1>, R> wrapped, Func<T1, R> handler) => wrapped.When(handler);
+
+		public static R operator |(Du<Du<T1>, R> wrapped, Func<Else, R> handler)
+		{
+			switch (wrapped.GetIndexUnsafe())
+			{
+				case 1: return handler(new Else(wrapped.Get<Du<T1>>().Get<T1>()));
+				case 2: return wrapped.Get<R>();
+				default: throw new InvalidInstanceException();
+			}
+		}
+
+		public static R operator |(Du<Du<T1>, R> wrapped, Func<R> handler)
+		{
+			switch (wrapped.GetIndexUnsafe())
+			{
+				case 1: return handler();
+				case 2: return wrapped.Get<R>();
+				default: throw new InvalidInstanceException();
+			}
+		}
+	}
+<#
+String Residual(System.Collections.Generic.IList<String> remaining)
+{
+	return $"Du<Du<{String.Join(", ", remaining)}>, R>";
+}
+
+for (var i = 1; i != MaxDuTypes; i++)
+{
+	var range = Enumerable.Range(1, i + 1).ToArray();
+	var gps = String.Join(", ", from n in range select $"T{n}");
+	var duName = $"Du<{gps}>";
+	var constraints = String.Join("\n\t\t", from n in range select $"where T{n} : notnull");
+#>
+
+	extension<<#=gps#>, R>(<#=duName#>)
+		<#=constraints#>
+		where R : notnull
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		var residualName = Residual(remaining);
+#>
+		public static <#=residualName#> operator |(<#=duName#> du, Func<T<#=pickN#>, R> handler) => du.When(handler);
+
+<#	}#>
+		public static R operator |(<#=duName#> du, Func<Else, R> handler)
+		{
+			switch (du.GetIndexUnsafe())
+			{
+<#	foreach (var n in range) {#>
+				case <#=n#>: return handler(new Else(du.Get<T<#=n#>>()));
+<#	}#>
+				default: throw new InvalidInstanceException();
+			}
+		}
+
+		public static R operator |(<#=duName#> du, Func<R> handler)
+		{
+			if (du.GetIndexUnsafe() == 0) throw new InvalidInstanceException();
+			return handler();
+		}
+	}
+
+	extension<<#=gps#>, R>(Du<<#=duName#>, R>)
+		<#=constraints#>
+		where R : notnull
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		var residualName = Residual(remaining);
+#>
+		public static <#=residualName#> operator |(Du<<#=duName#>, R> wrapped, Func<T<#=pickN#>, R> handler) => wrapped.When(handler);
+
+<#	}#>
+		public static R operator |(Du<<#=duName#>, R> wrapped, Func<Else, R> handler)
+		{
+			if (wrapped.TryPick<<#=duName#>>(out var inner)) return inner | handler;
+			return wrapped.Get<R>();
+		}
+
+		public static R operator |(Du<<#=duName#>, R> wrapped, Func<R> handler)
+		{
+			if (wrapped.TryPick<<#=duName#>>(out var inner)) return inner | handler;
+			return wrapped.Get<R>();
+		}
+	}
+
+	extension<<#=gps#>, R>(DuBase<<#=gps#>>)
+		<#=constraints#>
+		where R : notnull
+	{
+<#	foreach (var pickN in range)
+	{
+		var remaining = range.Where(n => n != pickN).Select(n => $"T{n}").ToList();
+		var residualName = Residual(remaining);
+#>
+		public static <#=residualName#> operator |(DuBase<<#=gps#>> du, Func<T<#=pickN#>, R> handler)
+			=> du.Du | handler;
+
+<#	}#>
+		public static R operator |(DuBase<<#=gps#>> du, Func<Else, R> handler)
+			=> du.Du | handler;
+
+		public static R operator |(DuBase<<#=gps#>> du, Func<R> handler)
+			=> du.Du | handler;
+	}
+<#}#>
+}
