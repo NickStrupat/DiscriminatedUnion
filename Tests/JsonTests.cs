@@ -107,7 +107,7 @@ public class JsonTests
 
 	[Theory]
 	[MemberData(nameof(NullableData))]
-	public void NullJson_NoNullInTheDu<T>(Dummy<T> _) where T : notnull
+	public void Deserialize_JsonNull_WithoutNoneArm_Throws<T>(Dummy<T> _) where T : notnull
 	{
 		var func = () => JsonSerializer.Deserialize<Du<T, Int32>>("null");
 		func.Should().Throw<JsonException>().Where(x =>
@@ -116,7 +116,7 @@ public class JsonTests
 
 	[Theory]
 	[MemberData(nameof(NullableData))]
-	public void NullJson_NullInTheDu<T>(Dummy<T> _) where T : notnull
+	public void Deserialize_JsonNull_WithNoneArm_PicksNone<T>(Dummy<T> _) where T : notnull
 	{
 		var mockStringAction = new Mock<Action<T>>();
 		var mockNullAction = new Mock<Action<None>>();

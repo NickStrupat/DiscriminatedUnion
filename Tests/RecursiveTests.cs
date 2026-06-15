@@ -38,17 +38,24 @@ public partial class RecursiveTests
 	sealed class JsonObject : Dictionary<String, JsonValue>;
 
 	[Fact]
-	public void DeserializeNullWithoutNullInTheDu()
+	public void Deserialize_JsonNull_WithoutNoneArm_Throws()
 	{
-		var json = "null";
-		Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<NonNullable>(json));
+		// NonNullable has no None arm, so "null" matches no arm and must be rejected
+		// with the converter's "no match" error rather than any other JsonException.
+		var ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<NonNullable>("null"));
+		Assert.Contains("No match was found", ex.Message);
 	}
 
 	[Fact]
-	public void DeserializeNullWithNullInTheDu()
+	public void Deserialize_JsonNull_WithNoneArm_PicksNone()
 	{
-		var json = "null";
-		_ = JsonSerializer.Deserialize<Nullable>(json);
+		// Nullable has a None arm, so "null" deserializes onto it (not the String arm)
+		// and round-trips back to "null".
+		var deserialized = JsonSerializer.Deserialize<Nullable>("null");
+		Assert.NotNull(deserialized);
+		Assert.True(deserialized.TryPick<None>(out _));
+		Assert.False(deserialized.TryPick<String>(out _));
+		Assert.Equal("null", JsonSerializer.Serialize(deserialized));
 	}
 
 	partial class Nullable : DuBase<String, None>;
