@@ -1,6 +1,10 @@
 # DiscriminatedUnion
 
-A discriminated union (sum type) for .NET, focused on zero-allocation dispatch and a fixed 24-byte footprint regardless of arm count.
+[![NuGet](https://img.shields.io/nuget/v/NickStrupat.DiscriminatedUnion)](https://www.nuget.org/packages/NickStrupat.DiscriminatedUnion)
+[![Downloads](https://img.shields.io/nuget/dt/NickStrupat.DiscriminatedUnion)](https://www.nuget.org/packages/NickStrupat.DiscriminatedUnion)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+A discriminated union (sum type) for .NET, focused on zero-allocation dispatch and a compact struct footprint — a fixed 24 bytes for 3 or more arms, with the 1- and 2-arm cases specialized to store each arm in its own field.
 
 ```csharp
 Du<int, string> du = 42;
@@ -10,7 +14,7 @@ var label = du.Match(i => $"int: {i}", s => $"str: {s}");
 ## Install
 
 ```
-dotnet add package DiscriminatedUnion
+dotnet add package NickStrupat.DiscriminatedUnion
 ```
 
 Targets `net10.0`. Root namespace `DiscriminatedUnion` (with `DiscriminatedUnion.Extensions` for the `Pick`/`When`/`|`/`Else` extensions and `DiscriminatedUnion.Visitors` for the visitor interfaces).
@@ -126,13 +130,26 @@ string result = du
 
 ## Storage
 
+The layout depends on arm count.
+
+**1 and 2 arms** are hand-specialized: each arm lives in its own strongly-typed field, plus a one-byte tag. The size is the sum of the arm sizes (plus tag and padding), so it varies with the arms — and value-type arms are *never* boxed, whatever their size:
+
 ```
-struct Du<T1, ..., Tn>          // 24 bytes total
+struct Du<T1, T2>               // sizeof(T1) + sizeof(T2) + tag + padding — varies
+├─ T1     field                 //   Du<int, string>      -> 16 bytes
+├─ T2     field                 //   Du<Guid, DateTime>   -> 32 bytes
+└─ byte   index                 //   Du<decimal, decimal> -> 40 bytes
+```
+
+**3 or more arms** share one fixed layout — 24 bytes regardless of how many further arms you add:
+
+```
+struct Du<T1, ..., Tn>          // 24 bytes total, for n >= 3
 ├─ UnmanagedStorage  (16 bytes) // inline payload for small unmanaged values
 └─ object?            (8 bytes) // discriminator sentinel + reference for boxed/managed values
 ```
 
-For each arm, at construction time:
+For each arm of a 3+-arm union, at construction time:
 
 | Arm value type | Storage strategy | Allocation |
 | --- | --- | --- |
@@ -140,7 +157,7 @@ For each arm, at construction time:
 | Value type with references, or > 16 bytes | Wrapped in a `Box<T>` record | One per construction |
 | Reference type | Reference stored directly | None |
 
-The cached sentinel array (one per byte index) means the discriminator costs nothing on the inline-storage path.
+The cached sentinel array (one per byte index) means the discriminator costs nothing on the inline-storage path. The 1- and 2-arm specializations exist precisely to avoid that `Box<T>` for the most common arities — at the cost of a struct whose size grows with its arms.
 
 ## Visitor dispatch (zero allocation)
 
@@ -155,7 +172,7 @@ internal readonly struct ToJson(Utf8JsonWriter writer, JsonSerializerOptions opt
 du.Accept(new ToJson(writer, options));
 ```
 
-The library uses this pattern internally for `ToString`, `GetHashCode`, `Equals`, JSON serialization, and `TryPick`. `Match`/`Switch` allocate one closure per call — fine for ergonomics, use `Accept` on hot paths.
+The library uses this pattern internally for `ToString`, `GetHashCode`, `Equals`, JSON serialization, and `TryPick`. `Match`/`Switch` allocate only when the delegates you pass *capture* local state — a non-capturing lambda (like `i => i.ToString()`) is cached by the compiler in a static field and allocates nothing per call. When you need to thread external state into a hot-path match without a closure, put that state in the fields of a struct `IVisitor` and use `Accept`.
 
 ## JSON
 
@@ -173,8 +190,8 @@ Named unions (`DuBase`-derived) get their own generated `JsonConverter`.
 
 | | This lib | [OneOf](https://github.com/mcintyre321/OneOf) | [Dunet](https://github.com/domn1995/dunet) | [LanguageExt](https://github.com/louthy/language-ext) |
 | --- | --- | --- | --- | --- |
-| Shape | `struct`, fixed 24 bytes | `struct`, one field per arm (grows with arity) | `record class` per arm | `class` (Either/Option/etc.) |
-| Allocation for value types | None (≤ 16 bytes) | None (lives in arm field) | One per construction | One per construction |
+| Shape | `struct`; 24 bytes at 3+ arms, 1–2 specialized (size varies) | `struct`, one field per arm (grows with arity) | `record class` per arm | `class` (Either/Option/etc.) |
+| Allocation for value types | None for 1–2 arms or ≤ 16-byte unmanaged; else one `Box` | None (lives in arm field) | One per construction | One per construction |
 | Allocation for reference types | None | None | One per construction | One per construction |
 | Max arms (anonymous) | 16 | 9 | unlimited | n/a (fixed types) |
 | Named unions | `DuBase<…>` + source gen | `OneOfBase<…>` (class) | Partial record + source gen | n/a |
@@ -184,7 +201,7 @@ Named unions (`DuBase`-derived) get their own generated `JsonConverter`.
 | JSON support | Built-in | Via `OneOf.Json` | Manual | Via `LanguageExt.Newtonsoft.Json` |
 | Scope | Discriminated unions only | Discriminated unions only | Discriminated unions only | Full functional toolkit |
 
-**When to pick this library:** value-type-heavy workloads where allocation pressure matters, hot paths that benefit from struct-visitor dispatch, or when you want a fixed footprint regardless of arity.
+**When to pick this library:** value-type-heavy workloads where allocation pressure matters, hot paths that benefit from struct-visitor dispatch, or when you want a footprint that stays fixed at 24 bytes as you add arms past two.
 
 **When to pick OneOf:** broadest community/ecosystem, you're already on it, or you want one field per arm so debugging shows all slots.
 
@@ -198,6 +215,10 @@ Named unions (`DuBase`-derived) get their own generated `JsonConverter`.
 - `TryPick<T>` chains and `TryCreate<T>` callers are runtime-checked — adding an arm won't break their call sites either. `Pick`/`When`/`|` chains, by contrast, *are* compile-time exhaustive: the residual type changes when you add an arm, breaking stale call sites.
 - `Else` and `|`-with-`Action<Else>` box value-type arms (the boxed value is exposed as `Else.Value`, typed `object`). Per-arm handlers (`Action<T>`) stay allocation-free.
 - Up to 16 arms (configurable via `MaxDuTypes` in `Templates/Shared.ttinclude`; raises generated assembly size).
+
+## Contributing
+
+Bug reports and pull requests are welcome on [GitHub](https://github.com/NickStrupat/DiscriminatedUnion). Please open an issue before starting significant work so we can align on approach.
 
 ## License
 
