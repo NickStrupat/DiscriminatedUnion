@@ -10,8 +10,13 @@
         <PackageId>NickStrupat.DiscriminatedUnion</PackageId>
         <Version>1.0.0-beta1</Version>
         <Authors>Nick Strupat</Authors>
+        <Description>A struct-based discriminated union (sum type) for .NET with zero-allocation dispatch and compile-time exhaustive matching. Provides anonymous unions (Du&lt;T1, ..., T16&gt;) and source-generated named unions (DuBase&lt;...&gt;), plus a zero-allocation struct-visitor escape hatch and built-in System.Text.Json support.</Description>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageProjectUrl>https://github.com/NickStrupat/DiscriminatedUnion</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/NickStrupat/DiscriminatedUnion.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>discriminated-union;discriminatedunion;sum-type;union;oneof;tagged-union;algebraic-data-type;adt;pattern-matching;match;switch;visitor;zero-allocation;allocation-free;struct;value-type;source-generator;functional;result;option</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>
